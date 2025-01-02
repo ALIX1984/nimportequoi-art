@@ -1,96 +1,113 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alix et Caroline</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f4f9;
-            overflow: hidden;
-            position: relative;
-            text-align: center;
-        }
-        #text {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #333;
-            text-align: center;
-            white-space: pre-line; /* Permet les sauts de ligne */
-        }
-        @keyframes heart {
-            0% {
-                transform: scale(0.5) translateY(0);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.2) translateY(-200px);
-                opacity: 0.8;
-            }
-            100% {
-                transform: scale(0.5) translateY(-400px);
-                opacity: 0;
-            }
-        }
-        .heart {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background-color: red;
-            clip-path: polygon(50% 0%, 100% 35%, 82% 100%, 50% 75%, 18% 100%, 0% 35%);
-            animation: heart 4s ease-in-out infinite;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Générateur de Collage - MET</title>
+  <!-- Inclusion de p5.js depuis un CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
 </head>
 <body>
-    <div id="text">ALIX ET CAROLINE JE VOUS AIME ! ❤️</div>
+  <h1>Collage MET</h1>
+  <p>Clique sur le canevas pour générer un nouveau collage.</p>
+  <div id="loading" style="display: none; text-align: center; font-size: 1.2rem; color: gray;">Chargement des images...</div>
+  <script>
+    // Nombre d'images à charger
+    const NUM_IMAGES = 5;
 
-    <script>
-        // Fonction pour démarrer l'animation des cœurs
-        function createHearts() {
-            const body = document.body;
+    // Tableau qui stockera les objets images p5.js
+    let images = [];
 
-            function generateHeart() {
-                const heart = document.createElement('div');
-                heart.classList.add('heart');
-                heart.style.left = `${Math.random() * 100}%`;
-                heart.style.animationDuration = `${3 + Math.random() * 2}s`; // Durée aléatoire entre 3 et 5 secondes
-                body.appendChild(heart);
+    function setup() {
+      createCanvas(800, 600);
+      background(220);
 
-                setTimeout(() => {
-                    heart.remove(); // Supprime le cœur après l'animation
-                }, 5000);
+      // Charger des images au démarrage
+      loadRandomImages(NUM_IMAGES);
+    }
+
+    function draw() {
+      background(220);
+
+      // Afficher chaque image à une position et une taille aléatoires
+      for (let img of images) {
+        let x = random(width);
+        let y = random(height);
+
+        let maxW = random(100, 300); // Taille maximale
+        let ratio = img.height / img.width;
+        let w = maxW;
+        let h = w * ratio;
+
+        image(img, x, y, w, h);
+      }
+
+      // Arrêter la boucle draw après la première exécution
+      noLoop();
+    }
+
+    function mousePressed() {
+      // Recharger de nouvelles images lorsque l'utilisateur clique
+      loadRandomImages(NUM_IMAGES);
+    }
+
+    function loadRandomImages(n) {
+      // Afficher le message de chargement
+      document.getElementById('loading').style.display = 'block';
+
+      // Vider le tableau d'images
+      images = [];
+
+      fetch('https://collectionapi.metmuseum.org/public/collection/v1/objects')
+        .then(response => response.json())
+        .then(data => {
+          const total = data.total;
+          const objectIDs = data.objectIDs;
+
+          let promises = [];
+          for (let i = 0; i < n; i++) {
+            let randomIndex = Math.floor(Math.random() * total);
+            let id = objectIDs[randomIndex];
+
+            let p = fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`)
+              .then(res => res.json())
+              .then(objData => {
+                if (objData && objData.primaryImage && objData.primaryImage !== '') {
+                  return loadImageAsync(objData.primaryImage);
+                } else {
+                  return null;
+                }
+              });
+            promises.push(p);
+          }
+
+          Promise.all(promises).then(results => {
+            results = results.filter(img => img !== null);
+
+            if (results.length === 0) {
+              console.log("Aucune image trouvée, réessayez!");
             }
 
-            // Génère des cœurs toutes les 400ms
-            setInterval(generateHeart, 400);
-        }
+            images = results;
 
-        // Fonction pour lire les messages avec une voix artificielle
-        function speakMessage() {
-            const messages = [
-                "ALIX ET CAROLINE JE VOUS AIME",
-                "pourriez apporter le café à David dans son lit tous les matins"
-            ];
+            // Cacher le message de chargement
+            document.getElementById('loading').style.display = 'none';
 
-            messages.forEach((message, index) => {
-                const utterance = new SpeechSynthesisUtterance(message);
-                utterance.lang = 'fr-FR'; // Langue française
-                utterance.rate = 1; // Vitesse normale
-                utterance.pitch = 1; // Tonalité normale
-                setTimeout(() => speechSynthesis.speak(utterance), index * 4000); // Délai entre les messages
-            });
-        }
+            redraw();
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById('loading').textContent = "Erreur lors du chargement.";
+        });
+    }
 
-        // Chronologie des animations et de la synthèse vocale
-        setTimeout(createHearts, 1000); // Les cœurs commencent après 1 seconde
-        setTimeout(speakMessage, 2000); // La voix commence après 2 secondes
-    </script>
+    // Fonction pour charger une image avec une Promise
+    function loadImageAsync(url) {
+      return new Promise((resolve, reject) => {
+        loadImage(url, img => resolve(img), err => reject(err));
+      });
+    }
+  </script>
 </body>
 </html>
