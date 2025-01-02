@@ -10,7 +10,7 @@
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      margin: 0;
+      margin: 0; 
       padding: 0;
     }
     canvas {
@@ -48,9 +48,11 @@
     /* ------------------------------------------------------------------
        Variables globales du jeu
        ------------------------------------------------------------------ */
-    let cat, mouse;
-    let objects = [];
+    let cat;            // Pour l'image du chat
+    let mouse;          // Pour l'image de la souris
+    let objects = [];   // Tableau d'images (pomme, chaussure, etc.)
     let fallingObjects = [];
+
     let score = 0;
     let errors = 0;
     const MAX_ERRORS = 10;
@@ -59,10 +61,11 @@
        p5.js : Préchargement (avant setup)
        ------------------------------------------------------------------ */
     function preload() {
-      // Charger les images à partir des chaînes base64
+      // Charger le chat et la souris (base64)
       cat   = loadImage(CAT_BASE64);
       mouse = loadImage(MOUSE_BASE64);
-
+      
+      // Charger les objets en base64 (ici : pomme et chaussure)
       objects = [
         loadImage(APPLE_BASE64),
         loadImage(SHOE_BASE64)
@@ -77,12 +80,13 @@
       frameRate(30);   // On limite à 30 fps pour éviter de trop solliciter la machine
       noCursor();      // Masquer le curseur pour mieux voir le chat suivre la souris
 
-      // On génère 6 objets (souris ou autres) de manière aléatoire
+      // Générer quelques éléments tombants
       for (let i = 0; i < 6; i++) {
         fallingObjects.push({
           x: random(width),
           y: random(-height, 0),
           type: random(['mouse', 'object']),
+          // On choisit aléatoirement l'une des images "objects" si c'est un objet
           img: random(objects),
           speed: random(2, 5)
         });
@@ -95,36 +99,34 @@
     function draw() {
       background(220);
 
-      // Afficher le chat (il suit la souris, en bas de l'écran)
+      // Afficher le chat en bas, centré sur la souris
       image(cat, mouseX - 50, height - 100, 100, 100);
 
       // Parcourir tous les objets/souris qui tombent
       for (let obj of fallingObjects) {
-        // Choix de l'image : souris ou objet ?
         if (obj.type === 'mouse') {
           // Souris
           image(mouse, obj.x, obj.y, 50, 50);
         } else {
-          // Un des objets (pomme, chaussure, ...)
+          // Un des objets
           image(obj.img, obj.x, obj.y, 50, 50);
         }
 
         // Faire tomber l’objet
         obj.y += obj.speed;
 
-        // Si l’objet sort de l'écran, on le réinitialise au-dessus
+        // Sort de l'écran ? On le réinitialise
         if (obj.y > height) {
           resetFallingObject(obj);
         }
 
-        // Vérifier la "collision" avec le chat
-        // On fait un test simple : si l'objet est dans la zone horizontale du chat 
-        // au moment où il est en bas de l'écran (hauteur > height - 150)
+        // Vérifier collision avec le chat
         if (
           obj.y > height - 150 &&         // environ la hauteur du chat
           obj.x > mouseX - 50 &&          // limite gauche du chat
           obj.x < mouseX + 50             // limite droite du chat
         ) {
+          // Souris ou objet ?
           if (obj.type === 'mouse') {
             score++;
             playSound('mew');
@@ -133,18 +135,18 @@
             playSound('hiss');
           }
 
-          // Mise à jour de l'affichage
+          // Mettre à jour l'affichage
           document.getElementById('score').textContent  = `Score : ${score}`;
           document.getElementById('errors').textContent = `Erreurs : ${errors}`;
 
-          // On réinitialise l'objet au-dessus
+          // Réinitialiser l'objet
           resetFallingObject(obj);
         }
       }
 
-      // Vérifier la fin du jeu
+      // Fin de partie ?
       if (errors >= MAX_ERRORS) {
-        noLoop(); // on arrête de dessiner
+        noLoop();
         textSize(32);
         textAlign(CENTER, CENTER);
         fill(255, 0, 0);
@@ -153,7 +155,7 @@
     }
 
     /* ------------------------------------------------------------------
-       Réinitialiser un objet qui tombe (une souris ou un objet)
+       Réinitialiser un objet (souris ou objet)
        ------------------------------------------------------------------ */
     function resetFallingObject(obj) {
       obj.x     = random(width);
@@ -164,7 +166,7 @@
     }
 
     /* ------------------------------------------------------------------
-       Jouer un son (pour l’instant, simplement un console.log)
+       Jouer un son (pour l’instant, juste un console.log)
        ------------------------------------------------------------------ */
     function playSound(type) {
       if (type === 'mew') {
