@@ -10,7 +10,7 @@
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      margin: 0; 
+      margin: 0;
       padding: 0;
     }
     canvas {
@@ -25,38 +25,57 @@
 </head>
 <body>
   <h1>Chat Attrape-Souris 🐱</h1>
-  <p>Déplacez la souris pour bouger le chat, attrapez les souris et évitez les objets !</p>
+  <p>Déplace la souris pour bouger le chat, attrapez les souris et évitez les objets !</p>
   <p id="score">Score : 0</p>
   <p id="errors">Erreurs : 0</p>
 
   <script>
-    // ----- Variables globales -----
-    let catImg;                // Image du chat
-    let mouseImg;              // Image de la souris
-    let objects = [];          // Tableau d'images pour les "objets"
-    let fallingObjects = [];   // Tableau des objets/souris qui tombent
+    /* ------------------------------------------------------------------
+       IMAGES EN BASE64 (aucun appel externe)
+       ------------------------------------------------------------------ */
+    // Icône Chat (PNG 40×40)
+    const CAT_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACz0lEQVR4nM2Wz0vTQBjFzx/mUcEbDImpeoNxUKGjAUaQww05MNJBXpaYPcxI2Cr1KnC5ImQjsXmqZbJPXKpe8hPxrHKYk5O9UXqkzzSpG1xAP0hduAkvw+uV7/v/fYKAIAECCAC0sX1LoClAMARYAQwDRCACsAtpZ6OfvoQ39dH2MG9ZD90W/h8M1Ax+2YjGf1vv25bX/9pKM4f7ezexXbqH1nsi4kABNYPS49LfRwcgHAX09mFYgbIb0c4yR3z15PD7xpm/O2ebzqdx2n+UydrJ+NKJ+p23bE790oVOg6+OJ++3xx37DhGO7dw6RVMrq4d66Kd9GcX/xoQQNdp/p3Mc0SQt+Ng30gFxqWu6kGZ5r9YymsMrcKQ7TpmthC/g3Ov0R4wRB93Ce2ZfwON5L5lrlU1SwjoYyjZpo0JKplHeB8+QaZ+oZaa2qcdby4oI2kd6tVBrdeyIpkiMsf2Ul6UM4xpUwYEnSCPwncLicdzHKtLaz5kKwo3s713Tsg4xg9h3rxkSWOne0ov7FT+AVAG1MZtE2zPSyTC5HC941wxADQaClMGnKsgn44TVmTZHkQlsHn+fCwybwgM/muqgaawWw+1xHB1TJfpKI4DEYzS+7ehvMKsfWoFSiioZ1AqDZ8+Rt9r0+CKAoEmGUbDANHW8Fu9VSjIkAJo19xdtrxyCYSdRuhXrcKcTqN3ddxQ1BnZbmQn03Lk+mXslkqK4Rx6zeql8VsUaEjKaWDOAx6GAta88iWzt3XHpAL2twThwLORH/vWF8mwILu6BJqxzC7PVtDQwAUS8ADON2bOt5iuyLu8r8owGIMr+2jc32KJsMmToaNU1nK8kYh6G3Pn6Nbb9rgdvgNsHIVgk5/A9EjGxy4Cxu31AAAAAElFTkSuQmCC";
+
+    // Icône Souris (PNG 40×40)
+    const MOUSE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACAUlEQVR4nO3XQYrCQBRA0c+SFk3PnoUc5B6BzYudmjiOx3Owfe+SzDU+2kH2q9vG6EY8MAQIFFCgZ+Ab3zSdq3t6Is2cZ82v2nR6xrt9fQM1+DIZNgCNDcR6y9gN3v6d7clFtSgwhLzvATr1t2bHGpG8wtKyL5rMAk9/cQJ/LrMC7WSwB7cF6DEy7UT1fslgX1nPGXigH52nZ8/H0rScfVXy2QVn7GPc6LLlIO5d1KW9IJxO56lRZqY+rxflrICk70KFNRihE8NT5afrel3+Bzij+WRq6r3k9bQOsraM93zBqe8X6b2qgN7EL+MXIZNkCo2WUfik0Geg3cYMdPinG0S505U0gRM/+iqRPfrd51n9Gr2v+udQn4vBGX+qzbqe8f12JqdfSO8PhAP3GlyA/OtCJAAAAAElFTkSuQmCC";
+
+    // Icône Pomme (PNG 40×40)
+    const APPLE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACQ0lEQVR4nO3WS4hUURQG4H8QBanLQUBJMY/gPlD9D5lAoleIKKv2CL+HO1GLgUgKyJCCxGwFPGC51AQQIHDphTlO12TZvbS6zZ4HO/ufec7MznrpVF1WN1WuAqJImAxAk4R4TYkGR4yqrl2opRu3I8h6qg6hCLMHSw8NwnRMOb3KL9vIGb8y5hnO9kXcTETI3QE9+yoCV8kB9CY+Z6nXTXtjZ94DVd7zgkydAF+ij/dkP0Pt2OAY/sXw65iJ+1sglAm+Y3c7ChJqB9KmxuGaFdphGhGjS3rc8dM/xRzvky3sqS+YGl6KwpT3Bexh55cFnNEX1Z8Iy8bbiOZy9TL4cLzfw86CXnExOis1MxPfMYbrUJ6k9f8GPKPdnpLMoJ9ixdK9uK0aDJHAid9MCZ5v+koA7odHRicqDL6neKG97UwL6iMElkh19V9EBfUyOdXKgRIb1UL9m3DFn2mMfOpParBuvvK+Gc7qmswMN4Cs/6uF8pQIF+iywpCbxJsOgkmXCOWimCXzQT8OAT/eBVfui4iE7c9KgF3yNCNYKMxQFNzzREy2/m1CqkpyBZ/rwDJuiiRL4SSlS+Bk4Ch3cJOKhPr9n8IYVDnIITTXAp/kUVjr0dBTuYM+EiBqHe+y8vSzpnkEstI1KWyB/IZyiNzhlAf5TDVy29thX+4vwT8HK3aKek7roAAAAASUVORK5CYII=";
+
+    // Icône Chaussure (PNG 40×40)
+    const SHOE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABkklEQVR4nO2UvYrUQBSFz6zBqAyRKhgFHRKI1roFqDZE6Qb/QTANQQXX6dRXQEtILiC1NAVE9b2B0gX+Ekok1wtn2/0tsCd93sj5LU7S1Arxl1ratWDADzAa85IFqX4F5BNHjrJnifP4Nz+CoGrGFHAGDGKJDnDuPZkAptsc24IsOIozNQPo0S5fIRAFSLsABkCtmcrw45yDnq62fHIMru3S4FAcxI3Tc3JpHZ+pw4HyoDFfm41l7GpHr9QINJ795EKTXkocad2fyFvkcSDdEP7gTZDBzxiGZ3W2mWclPUOmGXd/Ryj++xxvwuG563BMgB17crSfE4MvIM7UOUsygf5myTCc84yjMucl9KvIA2jFfBAcKAzHlMlO7R9saMNag7bILbVTBJkPYrZ5IO9En1tjTHvVVURq/G24Rx9mDWSXI+6tSCu64NaRBDu2bMc/EmUA8W4YRn3pPHBwMD+fhIkcD4TvR2em0rkcS2Kke8gEyp7BGZBnpgh/W6pbln8iIDyN2SoK8/gv5McMtnqKvwOjHs1lvAAAAAElFTkSuQmCC";
+
+    /* ------------------------------------------------------------------
+       Variables globales du jeu
+       ------------------------------------------------------------------ */
+    let cat, mouse;
+    let objects = [];
+    let fallingObjects = [];
     let score = 0;
     let errors = 0;
-    const MAX_ERRORS = 10;     // Nombre d'erreurs avant Game Over
+    const MAX_ERRORS = 10;
 
-    // ----- Préchargement des images -----
+    /* ------------------------------------------------------------------
+       p5.js : Préchargement (avant setup)
+       ------------------------------------------------------------------ */
     function preload() {
-      catImg   = loadImage('https://i.imgur.com/VyRUXK7.png'); // Chat
-      mouseImg = loadImage('https://i.imgur.com/4AEZNSk.png'); // Souris
+      // Charger les images à partir des chaînes base64
+      cat   = loadImage(CAT_BASE64);
+      mouse = loadImage(MOUSE_BASE64);
 
       objects = [
-        loadImage('https://i.imgur.com/8DGrddT.png'), // Pomme
-        loadImage('https://i.imgur.com/QplrV5v.png'), // Banane
-        loadImage('https://i.imgur.com/TPZ0P6q.png'), // Chaussure
-        loadImage('https://i.imgur.com/dXBnvOG.png')  // Balle
+        loadImage(APPLE_BASE64),
+        loadImage(SHOE_BASE64)
       ];
     }
 
-    // ----- Setup p5 -----
+    /* ------------------------------------------------------------------
+       p5.js : setup
+       ------------------------------------------------------------------ */
     function setup() {
       createCanvas(800, 600);
       frameRate(30);   // On limite à 30 fps pour éviter de trop solliciter la machine
-      noCursor();      // On masque le curseur pour mieux voir le chat suivre la souris
+      noCursor();      // Masquer le curseur pour mieux voir le chat suivre la souris
 
       // On génère 6 objets (souris ou autres) de manière aléatoire
       for (let i = 0; i < 6; i++) {
@@ -70,19 +89,23 @@
       }
     }
 
-    // ----- Boucle de dessin -----
+    /* ------------------------------------------------------------------
+       p5.js : draw (boucle de rendu)
+       ------------------------------------------------------------------ */
     function draw() {
       background(220);
 
-      // Afficher le chat (il suit la souris en bas de l'écran)
-      image(catImg, mouseX - 50, height - 100, 100, 100);
+      // Afficher le chat (il suit la souris, en bas de l'écran)
+      image(cat, mouseX - 50, height - 100, 100, 100);
 
       // Parcourir tous les objets/souris qui tombent
       for (let obj of fallingObjects) {
         // Choix de l'image : souris ou objet ?
         if (obj.type === 'mouse') {
-          image(mouseImg, obj.x, obj.y, 50, 50);
+          // Souris
+          image(mouse, obj.x, obj.y, 50, 50);
         } else {
+          // Un des objets (pomme, chaussure, ...)
           image(obj.img, obj.x, obj.y, 50, 50);
         }
 
@@ -95,12 +118,12 @@
         }
 
         // Vérifier la "collision" avec le chat
-        // On fait un test simple : si l'objet arrive en bas
-        // et qu'il est dans la zone horizontale du chat
+        // On fait un test simple : si l'objet est dans la zone horizontale du chat 
+        // au moment où il est en bas de l'écran (hauteur > height - 150)
         if (
-          obj.y > height - 150 &&     // environ la hauteur du chat
-          obj.x > mouseX - 50 &&      // limite gauche du chat
-          obj.x < mouseX + 50         // limite droite du chat
+          obj.y > height - 150 &&         // environ la hauteur du chat
+          obj.x > mouseX - 50 &&          // limite gauche du chat
+          obj.x < mouseX + 50             // limite droite du chat
         ) {
           if (obj.type === 'mouse') {
             score++;
@@ -129,7 +152,9 @@
       }
     }
 
-    // ----- Réinitialiser un objet qui tombe -----
+    /* ------------------------------------------------------------------
+       Réinitialiser un objet qui tombe (une souris ou un objet)
+       ------------------------------------------------------------------ */
     function resetFallingObject(obj) {
       obj.x     = random(width);
       obj.y     = random(-height, 0);
@@ -138,7 +163,9 @@
       obj.speed = random(2, 5);
     }
 
-    // ----- Jouer un son (simulé pour l’instant) -----
+    /* ------------------------------------------------------------------
+       Jouer un son (pour l’instant, simplement un console.log)
+       ------------------------------------------------------------------ */
     function playSound(type) {
       if (type === 'mew') {
         console.log('Miaou !');  // Remplacez par un vrai son
