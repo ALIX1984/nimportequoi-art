@@ -3,54 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Site</title>
+    <title>N'importe quoi</title>
     <style>
         body {
             font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
             margin: 0;
-            padding: 0;
-            text-align: center;
             background-color: #f4f4f9;
+            overflow: hidden;
         }
-        header {
-            background-color: #0073e6;
-            color: white;
-            padding: 1rem 0;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            margin: 0 1rem;
+        #text {
+            font-size: 3rem;
             font-weight: bold;
+            color: #333;
+            text-align: center;
         }
-        section {
-            padding: 2rem;
+        .mirror {
+            transform: scaleX(-1);
         }
-        footer {
-            background-color: #333;
-            color: white;
-            padding: 1rem 0;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
+        @keyframes jump {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+        .jump {
+            display: inline-block;
+            animation: jump 0.5s ease infinite;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Bienvenue sur mon site</h1>
-        <nav>
-            <a href="index.html">Accueil</a>
-            <a href="about.html">À propos</a>
-            <a href="contact.html">Contact</a>
-        </nav>
-    </header>
-    <section>
-        <h2>Présentation</h2>
-        <p>Ceci est une page d'accueil créée spécialement pour votre projet.</p>
-    </section>
-    <footer>
-        <p>&copy; 2025 Mon Site - Tous droits réservés.</p>
-    </footer>
+    <div id="text">N'importe quoi</div>
+
+    <script>
+        const textElement = document.getElementById('text');
+
+        // Fonction pour afficher le texte en miroir
+        function showMirrorText() {
+            textElement.classList.add('mirror');
+        }
+
+        // Fonction pour lancer l'animation "saute-mouton"
+        function playLeapFrog() {
+            const text = "N'importe quoi";
+            textElement.innerHTML = ''; // Vide le contenu
+            [...text].forEach((char, index) => {
+                const span = document.createElement('span');
+                span.textContent = char;
+                span.style.display = 'inline-block';
+                span.style.animationDelay = `${index * 0.1}s`; // Décalage pour chaque lettre
+                span.classList.add('jump');
+                textElement.appendChild(span);
+            });
+        }
+
+        // Chronologie des animations
+        setTimeout(showMirrorText, 2000); // Texte en miroir après 2 secondes
+        setTimeout(playLeapFrog, 4000);   // Animation saute-mouton après 4 secondes
+    </script>
 </body>
 </html>
