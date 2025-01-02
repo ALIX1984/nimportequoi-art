@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>N'importe quoi</title>
+    <title>Alix et Caroline</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,24 +14,14 @@
             margin: 0;
             background-color: #f4f4f9;
             overflow: hidden;
+            position: relative;
         }
         #text {
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: bold;
             color: #333;
             text-align: center;
             white-space: pre-line; /* Permet les sauts de ligne */
-        }
-        .mirror {
-            transform: scaleX(-1);
-        }
-        @keyframes jump {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-30px); }
-        }
-        .jump {
-            display: inline-block;
-            animation: jump 0.5s ease infinite;
         }
         @keyframes heart {
             0% {
@@ -49,47 +39,19 @@
         }
         .heart {
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 30px;
+            height: 30px;
             background-color: red;
             clip-path: polygon(50% 0%, 100% 35%, 82% 100%, 50% 75%, 18% 100%, 0% 35%);
-            animation: heart 3s ease-in-out infinite;
+            animation: heart 4s ease-in-out infinite;
         }
     </style>
 </head>
 <body>
-    <div id="text">N'importe quoi</div>
+    <div id="text">Alix Gallouin et Caroline Planquois,\nJe vous aime ❤️</div>
 
     <script>
-        const textElement = document.getElementById('text');
-
-        // Fonction pour afficher le texte en miroir
-        function showMirrorText() {
-            textElement.classList.add('mirror');
-        }
-
-        // Fonction pour lancer l'animation "saute-mouton"
-        function playLeapFrog() {
-            const text = "N'importe quoi";
-            textElement.innerHTML = ''; // Vide le contenu
-            [...text].forEach((char, index) => {
-                const span = document.createElement('span');
-                span.textContent = char;
-                span.style.display = 'inline-block';
-                span.style.animationDelay = `${index * 0.1}s`; // Décalage pour chaque lettre
-                span.classList.add('jump');
-                textElement.appendChild(span);
-            });
-        }
-
-        // Fonction pour afficher le message final
-        function showFinalMessage() {
-            textElement.classList.remove('mirror');
-            textElement.innerHTML = "Parce qu'en amour, on fait N'importe quoi.\nVeux-tu m'épouser Caroline ?";
-            createHearts(); // Lance l'animation des cœurs
-        }
-
-        // Fonction pour créer des cœurs animés
+        // Fonction pour démarrer l'animation des cœurs
         function createHearts() {
             const body = document.body;
 
@@ -97,7 +59,7 @@
                 const heart = document.createElement('div');
                 heart.classList.add('heart');
                 heart.style.left = `${Math.random() * 100}%`;
-                heart.style.animationDuration = `${2 + Math.random() * 3}s`; // Durée aléatoire entre 2 et 5 secondes
+                heart.style.animationDuration = `${3 + Math.random() * 2}s`; // Durée aléatoire entre 3 et 5 secondes
                 body.appendChild(heart);
 
                 setTimeout(() => {
@@ -105,14 +67,24 @@
                 }, 5000);
             }
 
-            // Génère des cœurs toutes les 300ms
-            setInterval(generateHeart, 300);
+            // Génère des cœurs toutes les 400ms
+            setInterval(generateHeart, 400);
+        }
+
+        // Fonction pour lire le texte avec une voix artificielle
+        function speakMessage() {
+            const message = "Je vous aime, Alix et Caroline, je vous aime.";
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.lang = 'fr-FR'; // Langue française
+            utterance.rate = 1; // Vitesse normale
+            utterance.pitch = 1; // Tonalité normale
+            speechSynthesis.speak(utterance);
         }
 
         // Chronologie des animations
-        setTimeout(showMirrorText, 2000); // Texte en miroir après 2 secondes
-        setTimeout(playLeapFrog, 4000);   // Animation saute-mouton après 4 secondes
-        setTimeout(showFinalMessage, 9000); // Message final avec cœurs après 9 secondes
+        setTimeout(createHearts, 1000); // Les cœurs commencent après 1 seconde
+        setTimeout(speakMessage, 2000); // La voix commence après 2 secondes
     </script>
 </body>
 </html>
+
