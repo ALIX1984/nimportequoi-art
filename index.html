@@ -13,78 +13,38 @@
             height: 100vh;
             margin: 0;
             background-color: #f4f4f9;
-            overflow: hidden;
-            position: relative;
+            text-align: center;
         }
         #text {
             font-size: 2.5rem;
             font-weight: bold;
             color: #333;
-            text-align: center;
-            white-space: pre-line; /* Permet les sauts de ligne */
-        }
-        @keyframes heart {
-            0% {
-                transform: scale(0.5) translateY(0);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.2) translateY(-200px);
-                opacity: 0.8;
-            }
-            100% {
-                transform: scale(0.5) translateY(-400px);
-                opacity: 0;
-            }
-        }
-        .heart {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background-color: red;
-            clip-path: polygon(50% 0%, 100% 35%, 82% 100%, 50% 75%, 18% 100%, 0% 35%);
-            animation: heart 4s ease-in-out infinite;
         }
     </style>
 </head>
 <body>
-    <div id="text">Alix et Caroline , Je vous aime ❤️</div>
+    <div id="text">ALIX ET CAROLINE JE VOUS AIME !</div>
 
     <script>
-        // Fonction pour démarrer l'animation des cœurs
-        function createHearts() {
-            const body = document.body;
-
-            function generateHeart() {
-                const heart = document.createElement('div');
-                heart.classList.add('heart');
-                heart.style.left = `${Math.random() * 100}%`;
-                heart.style.animationDuration = `${3 + Math.random() * 2}s`; // Durée aléatoire entre 3 et 5 secondes
-                body.appendChild(heart);
-
-                setTimeout(() => {
-                    heart.remove(); // Supprime le cœur après l'animation
-                }, 5000);
-            }
-
-            // Génère des cœurs toutes les 400ms
-            setInterval(generateHeart, 400);
-        }
-
         // Fonction pour lire le texte avec une voix artificielle
         function speakMessage() {
-            const message = "Je vous aime, Alix et Caroline, je vous aime.";
-            const utterance = new SpeechSynthesisUtterance(message);
-            utterance.lang = 'fr-FR'; // Langue française
-            utterance.rate = 1; // Vitesse normale
-            utterance.pitch = 1; // Tonalité normale
-            speechSynthesis.speak(utterance);
+            const messages = [
+                "ALIX ET CAROLINE JE VOUS AIME",
+                "Vous pourriez apporter le café à David dans son lit tous les matins"
+            ];
+
+            messages.forEach((message, index) => {
+                const utterance = new SpeechSynthesisUtterance(message);
+                utterance.lang = 'fr-FR'; // Langue française
+                utterance.rate = 1; // Vitesse normale
+                utterance.pitch = 1; // Tonalité normale
+                utterance.delay = index * 3000; // Décalage entre les messages
+                setTimeout(() => speechSynthesis.speak(utterance), index * 4000);
+            });
         }
 
-        // Chronologie des animations
-        setTimeout(createHearts, 1000); // Les cœurs commencent après 1 seconde
-        setTimeout(speakMessage, 2000); // La voix commence après 2 secondes
+        // Lancer la synthèse vocale après le chargement de la page
+        window.onload = speakMessage;
     </script>
 </body>
 </html>
-
