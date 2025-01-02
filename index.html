@@ -3,110 +3,148 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Générateur de Collage - MET</title>
-  <!-- Inclusion de p5.js depuis un CDN -->
+  <title>Chat Attrape-Souris</title>
+  <!-- p5.js -->
   <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0; 
+      padding: 0;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #def; /* léger fond bleu clair */
+    }
+    h1 {
+      margin-top: 1rem;
+    }
+  </style>
 </head>
 <body>
-  <h1>Collage MET</h1>
-  <p>Clique sur le canevas pour générer un nouveau collage.</p>
-  <div id="loading" style="display: none; text-align: center; font-size: 1.2rem; color: gray;">Chargement des images...</div>
+  <h1>Chat Attrape-Souris 🐱</h1>
+  <p>Déplacez la souris pour bouger le chat, attrapez les souris et évitez les objets !</p>
+  <p id="score">Score : 0</p>
+  <p id="errors">Erreurs : 0</p>
+
   <script>
-    // Nombre d'images à charger
-    const NUM_IMAGES = 5;
+    // ----- Variables globales -----
+    let catImg;                // Image du chat
+    let mouseImg;              // Image de la souris
+    let objects = [];          // Tableau d'images pour les "objets"
+    let fallingObjects = [];   // Tableau des objets/souris qui tombent
+    let score = 0;
+    let errors = 0;
+    const MAX_ERRORS = 10;     // Nombre d'erreurs avant Game Over
 
-    // Tableau qui stockera les objets images p5.js
-    let images = [];
+    // ----- Préchargement des images -----
+    function preload() {
+      catImg   = loadImage('https://i.imgur.com/VyRUXK7.png'); // Chat
+      mouseImg = loadImage('https://i.imgur.com/4AEZNSk.png'); // Souris
 
-    function setup() {
-      createCanvas(800, 600);
-      background(220);
-
-      // Charger des images au démarrage
-      loadRandomImages(NUM_IMAGES);
+      objects = [
+        loadImage('https://i.imgur.com/8DGrddT.png'), // Pomme
+        loadImage('https://i.imgur.com/QplrV5v.png'), // Banane
+        loadImage('https://i.imgur.com/TPZ0P6q.png'), // Chaussure
+        loadImage('https://i.imgur.com/dXBnvOG.png')  // Balle
+      ];
     }
 
+    // ----- Setup p5 -----
+    function setup() {
+      createCanvas(800, 600);
+      frameRate(30);   // On limite à 30 fps pour éviter de trop solliciter la machine
+      noCursor();      // On masque le curseur pour mieux voir le chat suivre la souris
+
+      // On génère 6 objets (souris ou autres) de manière aléatoire
+      for (let i = 0; i < 6; i++) {
+        fallingObjects.push({
+          x: random(width),
+          y: random(-height, 0),
+          type: random(['mouse', 'object']),
+          img: random(objects),
+          speed: random(2, 5)
+        });
+      }
+    }
+
+    // ----- Boucle de dessin -----
     function draw() {
       background(220);
 
-      // Afficher chaque image à une position et une taille aléatoires
-      for (let img of images) {
-        let x = random(width);
-        let y = random(height);
+      // Afficher le chat (il suit la souris en bas de l'écran)
+      image(catImg, mouseX - 50, height - 100, 100, 100);
 
-        let maxW = random(100, 300); // Taille maximale
-        let ratio = img.height / img.width;
-        let w = maxW;
-        let h = w * ratio;
+      // Parcourir tous les objets/souris qui tombent
+      for (let obj of fallingObjects) {
+        // Choix de l'image : souris ou objet ?
+        if (obj.type === 'mouse') {
+          image(mouseImg, obj.x, obj.y, 50, 50);
+        } else {
+          image(obj.img, obj.x, obj.y, 50, 50);
+        }
 
-        image(img, x, y, w, h);
-      }
+        // Faire tomber l’objet
+        obj.y += obj.speed;
 
-      // Arrêter la boucle draw après la première exécution
-      noLoop();
-    }
+        // Si l’objet sort de l'écran, on le réinitialise au-dessus
+        if (obj.y > height) {
+          resetFallingObject(obj);
+        }
 
-    function mousePressed() {
-      // Recharger de nouvelles images lorsque l'utilisateur clique
-      loadRandomImages(NUM_IMAGES);
-    }
-
-    function loadRandomImages(n) {
-      // Afficher le message de chargement
-      document.getElementById('loading').style.display = 'block';
-
-      // Vider le tableau d'images
-      images = [];
-
-      fetch('https://collectionapi.metmuseum.org/public/collection/v1/objects')
-        .then(response => response.json())
-        .then(data => {
-          const total = data.total;
-          const objectIDs = data.objectIDs;
-
-          let promises = [];
-          for (let i = 0; i < n; i++) {
-            let randomIndex = Math.floor(Math.random() * total);
-            let id = objectIDs[randomIndex];
-
-            let p = fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`)
-              .then(res => res.json())
-              .then(objData => {
-                if (objData && objData.primaryImage && objData.primaryImage !== '') {
-                  return loadImageAsync(objData.primaryImage);
-                } else {
-                  return null;
-                }
-              });
-            promises.push(p);
+        // Vérifier la "collision" avec le chat
+        // On fait un test simple : si l'objet arrive en bas
+        // et qu'il est dans la zone horizontale du chat
+        if (
+          obj.y > height - 150 &&     // environ la hauteur du chat
+          obj.x > mouseX - 50 &&      // limite gauche du chat
+          obj.x < mouseX + 50         // limite droite du chat
+        ) {
+          if (obj.type === 'mouse') {
+            score++;
+            playSound('mew');
+          } else {
+            errors++;
+            playSound('hiss');
           }
 
-          Promise.all(promises).then(results => {
-            results = results.filter(img => img !== null);
+          // Mise à jour de l'affichage
+          document.getElementById('score').textContent  = `Score : ${score}`;
+          document.getElementById('errors').textContent = `Erreurs : ${errors}`;
 
-            if (results.length === 0) {
-              console.log("Aucune image trouvée, réessayez!");
-            }
+          // On réinitialise l'objet au-dessus
+          resetFallingObject(obj);
+        }
+      }
 
-            images = results;
-
-            // Cacher le message de chargement
-            document.getElementById('loading').style.display = 'none';
-
-            redraw();
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          document.getElementById('loading').textContent = "Erreur lors du chargement.";
-        });
+      // Vérifier la fin du jeu
+      if (errors >= MAX_ERRORS) {
+        noLoop(); // on arrête de dessiner
+        textSize(32);
+        textAlign(CENTER, CENTER);
+        fill(255, 0, 0);
+        text('Game Over !', width / 2, height / 2);
+      }
     }
 
-    // Fonction pour charger une image avec une Promise
-    function loadImageAsync(url) {
-      return new Promise((resolve, reject) => {
-        loadImage(url, img => resolve(img), err => reject(err));
-      });
+    // ----- Réinitialiser un objet qui tombe -----
+    function resetFallingObject(obj) {
+      obj.x     = random(width);
+      obj.y     = random(-height, 0);
+      obj.type  = random(['mouse', 'object']);
+      obj.img   = random(objects);
+      obj.speed = random(2, 5);
+    }
+
+    // ----- Jouer un son (simulé pour l’instant) -----
+    function playSound(type) {
+      if (type === 'mew') {
+        console.log('Miaou !');  // Remplacez par un vrai son
+      } else if (type === 'hiss') {
+        console.log('Feule !');  // Remplacez par un vrai son
+      }
     }
   </script>
 </body>
