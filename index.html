@@ -32,6 +32,21 @@
             display: inline-block;
             animation: jump 0.5s ease infinite;
         }
+        @keyframes scatter {
+            0% { transform: translate(0, 0); opacity: 1; }
+            50% { 
+                transform: translate(
+                    calc(-50px + 100px * random()), 
+                    calc(-50px + 100px * random())
+                ); 
+                opacity: 0.5; 
+            }
+            100% { transform: translate(0, 0); opacity: 1; }
+        }
+        .scatter {
+            display: inline-block;
+            animation: scatter 2s ease infinite;
+        }
     </style>
 </head>
 <body>
@@ -58,9 +73,30 @@
             });
         }
 
+        // Fonction pour disperser les lettres dans toutes les directions
+        function scatterText() {
+            const text = "N'importe quoi";
+            textElement.innerHTML = ''; // Vide le contenu
+            [...text].forEach((char) => {
+                const span = document.createElement('span');
+                span.textContent = char;
+                span.style.display = 'inline-block';
+                span.classList.add('scatter');
+                textElement.appendChild(span);
+            });
+        }
+
+        // Fonction pour rétablir le texte normalement
+        function resetText() {
+            textElement.classList.remove('mirror');
+            textElement.innerHTML = "N'importe quoi";
+        }
+
         // Chronologie des animations
         setTimeout(showMirrorText, 2000); // Texte en miroir après 2 secondes
         setTimeout(playLeapFrog, 4000);   // Animation saute-mouton après 4 secondes
+        setTimeout(scatterText, 6000);   // Les lettres se dispersent après 6 secondes
+        setTimeout(resetText, 9000);     // Texte normal après 9 secondes
     </script>
 </body>
 </html>
