@@ -26,7 +26,7 @@
 </head>
 <body>
   <h1>Chat Attrape-Souris 🐱</h1>
-  <p>Déplacez le chat avec la souris pour attraper les souris et éviter les autres objets !</p>
+  <p>Déplacez le chat avec la souris pour attraper les souris et éviter les autres objets !</p>
   <p id="score">Score : 0</p>
   <p id="errors">Erreurs : 0</p>
 
@@ -41,9 +41,9 @@
       frameRate(30);
       noCursor(); // Masquer le curseur pour mieux voir le chat
 
-      // Vérifier si les images sont chargées avant de commencer
+      // Charger les images avant de générer les objets
       preloadImages(() => {
-        // Générer des éléments tombants une fois les images prêtes
+        // Générer quelques éléments tombants
         for (let i = 0; i < 6; i++) {
           fallingObjects.push({
             x: random(width),
@@ -57,14 +57,17 @@
     }
 
     function draw() {
+      // Si les images ne sont pas encore chargées, afficher un message
       if (!isLoaded) {
         background(200);
-        textAlign(CENTER, CENTER);
         textSize(24);
+        textAlign(CENTER, CENTER);
+        fill(0);
         text("Chargement des ressources...", width / 2, height / 2);
         return;
       }
 
+      // Fond gris clair
       background(220);
 
       // Afficher le chat en bas, centré sur la souris
@@ -72,26 +75,24 @@
 
       // Mettre à jour les éléments tombants
       for (let obj of fallingObjects) {
-        // Affichage
         if (obj.type === 'mouse') {
           image(mouse, obj.x, obj.y, 50, 50);
         } else {
           image(obj.img, obj.x, obj.y, 50, 50);
         }
 
-        // Faire tomber l’objet
         obj.y += obj.speed;
 
-        // Réinitialiser si on sort de l'écran
+        // Si l'objet sort de l'écran, on le réinitialise
         if (obj.y > height) {
           resetFallingObject(obj);
         }
 
-        // Vérifier collision avec le chat
+        // Vérifier la collision avec le chat
         if (
-          obj.y > height - 150 && // environ la hauteur du chat
-          obj.x > mouseX - 50 && // limite gauche
-          obj.x < mouseX + 50 // limite droite
+          obj.y > height - 150 && 
+          obj.x > mouseX - 50 && 
+          obj.x < mouseX + 50
         ) {
           if (obj.type === 'mouse') {
             score++;
@@ -101,22 +102,20 @@
             console.log("Feule !");
           }
 
-          // Mise à jour du scoreboard
           document.getElementById('score').textContent = `Score : ${score}`;
           document.getElementById('errors').textContent = `Erreurs : ${errors}`;
 
-          // On renvoie l'objet en haut
           resetFallingObject(obj);
         }
       }
 
-      // Game Over ?
+      // Vérifier si le joueur a atteint la limite d'erreurs
       if (errors >= MAX_ERRORS) {
         noLoop();
         textSize(32);
         textAlign(CENTER, CENTER);
         fill(255, 0, 0);
-        text("Game Over !", width / 2, height / 2);
+        text("Game Over !", width / 2, height / 2);
       }
     }
 
@@ -130,4 +129,3 @@
   </script>
 </body>
 </html>
-
