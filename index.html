@@ -5,14 +5,13 @@
   <title>Chat Attrape-Souris</title>
   <!-- Inclusion de p5.js -->
   <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
-  <!-- Inclusion du fichier objects.js (très important !) -->
+  <!-- Inclusion du fichier objects.js -->
   <script src="objects.js"></script>
-
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      margin: 0; 
+      margin: 0;
       padding: 0;
     }
     canvas {
@@ -46,11 +45,10 @@
     function setup() {
       createCanvas(800, 600);
       frameRate(30);
-      noCursor(); // Masquer le curseur pour mieux voir le chat
+      noCursor(); // Masquer le curseur
 
-      // Charger les images (chat, souris, pomme, chaussure) avant de créer les objets
+      // Charger les images avant de créer les objets tombants
       preloadImages(() => {
-        // Générer quelques éléments tombants une fois les images prêtes
         for (let i = 0; i < 6; i++) {
           fallingObjects.push({
             x: random(width),
@@ -67,7 +65,7 @@
        p5.js : draw
        ------------------------------------------------------------------ */
     function draw() {
-      // Si les images ne sont pas encore chargées, on affiche un message "Chargement…"
+      // Si les images ne sont pas chargées, afficher un message
       if (!isLoaded) {
         background(200);
         textSize(24);
@@ -83,7 +81,7 @@
       // Afficher le chat en bas, centré sur la souris
       image(cat, mouseX - 50, height - 100, 100, 100);
 
-      // Mise à jour des objets tombants
+      // Mettre à jour les objets tombants
       for (let obj of fallingObjects) {
         // Souris ou objet ?
         if (obj.type === 'mouse') {
@@ -92,7 +90,6 @@
           image(obj.img, obj.x, obj.y, 50, 50);
         }
 
-        // Faire tomber l’objet
         obj.y += obj.speed;
 
         // Réinitialiser si l'objet sort de l'écran
@@ -102,9 +99,9 @@
 
         // Vérifier la collision avec le chat
         if (
-          obj.y > height - 150 &&  // environ la hauteur du chat
-          obj.x > mouseX - 50 &&   // limite gauche du chat
-          obj.x < mouseX + 50      // limite droite du chat
+          obj.y > height - 150 && // environ la hauteur du chat
+          obj.x > mouseX - 50 &&  // limite gauche
+          obj.x < mouseX + 50     // limite droite
         ) {
           if (obj.type === 'mouse') {
             score++;
