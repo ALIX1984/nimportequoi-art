@@ -2,23 +2,22 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat Attrape-Souris</title>
-  <!-- Inclure p5.js -->
+  <!-- Inclusion de p5.js -->
   <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
-  <!-- Inclure le fichier objects.js -->
+  <!-- Inclusion du fichier objects.js -->
   <script src="objects.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      margin: 0;
+      margin: 0; 
       padding: 0;
     }
     canvas {
       display: block;
       margin: 0 auto;
-      background: #def; /* Fond bleu clair */
+      background: #def; /* léger fond bleu clair */
     }
     h1 {
       margin-top: 1rem;
@@ -27,7 +26,7 @@
 </head>
 <body>
   <h1>Chat Attrape-Souris 🐱</h1>
-  <p>Déplace la souris pour bouger le chat, attrapez les souris et évitez les objets !</p>
+  <p>Déplacez le chat avec la souris pour attraper les souris et éviter les autres objets !</p>
   <p id="score">Score : 0</p>
   <p id="errors">Erreurs : 0</p>
 
@@ -40,29 +39,29 @@
     function setup() {
       createCanvas(800, 600);
       frameRate(30);
-      noCursor();
+      noCursor(); // Masquer le curseur pour mieux voir le chat
 
+      // Vérifier si les images sont chargées avant de commencer
       preloadImages(() => {
+        // Générer des éléments tombants une fois les images prêtes
         for (let i = 0; i < 6; i++) {
           fallingObjects.push({
             x: random(width),
             y: random(-height, 0),
             type: random(['mouse', 'object']),
             img: random(objects),
-            speed: random(2, 5)
+            speed: random(2, 5),
           });
         }
-        loop(); // Démarrer le dessin une fois les images chargées
       });
     }
 
     function draw() {
       if (!isLoaded) {
         background(200);
-        textSize(32);
         textAlign(CENTER, CENTER);
-        fill(0);
-        text("Chargement...", width / 2, height / 2);
+        textSize(24);
+        text("Chargement des ressources...", width / 2, height / 2);
         return;
       }
 
@@ -71,37 +70,53 @@
       // Afficher le chat en bas, centré sur la souris
       image(cat, mouseX - 50, height - 100, 100, 100);
 
+      // Mettre à jour les éléments tombants
       for (let obj of fallingObjects) {
-        image(obj.type === 'mouse' ? mouse : obj.img, obj.x, obj.y, 50, 50);
+        // Affichage
+        if (obj.type === 'mouse') {
+          image(mouse, obj.x, obj.y, 50, 50);
+        } else {
+          image(obj.img, obj.x, obj.y, 50, 50);
+        }
+
+        // Faire tomber l’objet
         obj.y += obj.speed;
 
-        if (obj.y > height) resetFallingObject(obj);
+        // Réinitialiser si on sort de l'écran
+        if (obj.y > height) {
+          resetFallingObject(obj);
+        }
 
+        // Vérifier collision avec le chat
         if (
-          obj.y > height - 150 &&
-          obj.x > mouseX - 50 &&
-          obj.x < mouseX + 50
+          obj.y > height - 150 && // environ la hauteur du chat
+          obj.x > mouseX - 50 && // limite gauche
+          obj.x < mouseX + 50 // limite droite
         ) {
           if (obj.type === 'mouse') {
             score++;
-            playSound('mew');
+            console.log("Miaou !");
           } else {
             errors++;
-            playSound('hiss');
+            console.log("Feule !");
           }
 
+          // Mise à jour du scoreboard
           document.getElementById('score').textContent = `Score : ${score}`;
           document.getElementById('errors').textContent = `Erreurs : ${errors}`;
+
+          // On renvoie l'objet en haut
           resetFallingObject(obj);
         }
       }
 
+      // Game Over ?
       if (errors >= MAX_ERRORS) {
         noLoop();
         textSize(32);
         textAlign(CENTER, CENTER);
         fill(255, 0, 0);
-        text('Game Over !', width / 2, height / 2);
+        text("Game Over !", width / 2, height / 2);
       }
     }
 
@@ -112,10 +127,7 @@
       obj.img = random(objects);
       obj.speed = random(2, 5);
     }
-
-    function playSound(type) {
-      console.log(type === 'mew' ? 'Miaou !' : 'Feule !');
-    }
   </script>
 </body>
 </html>
+
