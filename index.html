@@ -5,8 +5,9 @@
   <title>Chat Attrape-Souris</title>
   <!-- Inclusion de p5.js -->
   <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
-  <!-- Inclusion du fichier objects.js -->
+  <!-- Inclusion du fichier objects.js (très important !) -->
   <script src="objects.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,7 +18,7 @@
     canvas {
       display: block;
       margin: 0 auto;
-      background: #def; /* léger fond bleu clair */
+      background: #def; /* Fond bleu clair */
     }
     h1 {
       margin-top: 1rem;
@@ -26,24 +27,30 @@
 </head>
 <body>
   <h1>Chat Attrape-Souris 🐱</h1>
-  <p>Déplacez le chat avec la souris pour attraper les souris et éviter les autres objets !</p>
+  <p>Déplacez le chat avec la souris pour attraper les souris et éviter les autres objets !</p>
   <p id="score">Score : 0</p>
   <p id="errors">Erreurs : 0</p>
 
   <script>
+    /* ------------------------------------------------------------------
+       Variables du jeu
+       ------------------------------------------------------------------ */
     let fallingObjects = [];
     let score = 0;
     let errors = 0;
     const MAX_ERRORS = 10;
 
+    /* ------------------------------------------------------------------
+       p5.js : setup
+       ------------------------------------------------------------------ */
     function setup() {
       createCanvas(800, 600);
       frameRate(30);
       noCursor(); // Masquer le curseur pour mieux voir le chat
 
-      // Charger les images avant de générer les objets
+      // Charger les images (chat, souris, pomme, chaussure) avant de créer les objets
       preloadImages(() => {
-        // Générer quelques éléments tombants
+        // Générer quelques éléments tombants une fois les images prêtes
         for (let i = 0; i < 6; i++) {
           fallingObjects.push({
             x: random(width),
@@ -56,8 +63,11 @@
       });
     }
 
+    /* ------------------------------------------------------------------
+       p5.js : draw
+       ------------------------------------------------------------------ */
     function draw() {
-      // Si les images ne sont pas encore chargées, afficher un message
+      // Si les images ne sont pas encore chargées, on affiche un message "Chargement…"
       if (!isLoaded) {
         background(200);
         textSize(24);
@@ -73,26 +83,28 @@
       // Afficher le chat en bas, centré sur la souris
       image(cat, mouseX - 50, height - 100, 100, 100);
 
-      // Mettre à jour les éléments tombants
+      // Mise à jour des objets tombants
       for (let obj of fallingObjects) {
+        // Souris ou objet ?
         if (obj.type === 'mouse') {
           image(mouse, obj.x, obj.y, 50, 50);
         } else {
           image(obj.img, obj.x, obj.y, 50, 50);
         }
 
+        // Faire tomber l’objet
         obj.y += obj.speed;
 
-        // Si l'objet sort de l'écran, on le réinitialise
+        // Réinitialiser si l'objet sort de l'écran
         if (obj.y > height) {
           resetFallingObject(obj);
         }
 
         // Vérifier la collision avec le chat
         if (
-          obj.y > height - 150 && 
-          obj.x > mouseX - 50 && 
-          obj.x < mouseX + 50
+          obj.y > height - 150 &&  // environ la hauteur du chat
+          obj.x > mouseX - 50 &&   // limite gauche du chat
+          obj.x < mouseX + 50      // limite droite du chat
         ) {
           if (obj.type === 'mouse') {
             score++;
@@ -102,23 +114,27 @@
             console.log("Feule !");
           }
 
-          document.getElementById('score').textContent = `Score : ${score}`;
+          // Mettre à jour l'affichage
+          document.getElementById('score').textContent  = `Score : ${score}`;
           document.getElementById('errors').textContent = `Erreurs : ${errors}`;
 
           resetFallingObject(obj);
         }
       }
 
-      // Vérifier si le joueur a atteint la limite d'erreurs
+      // Vérifier si on a atteint la limite d'erreurs
       if (errors >= MAX_ERRORS) {
         noLoop();
         textSize(32);
         textAlign(CENTER, CENTER);
         fill(255, 0, 0);
-        text("Game Over !", width / 2, height / 2);
+        text("Game Over !", width / 2, height / 2);
       }
     }
 
+    /* ------------------------------------------------------------------
+       Réinitialiser un objet
+       ------------------------------------------------------------------ */
     function resetFallingObject(obj) {
       obj.x = random(width);
       obj.y = random(-height, 0);
