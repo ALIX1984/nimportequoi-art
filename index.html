@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat Attrape-Souris</title>
   <!-- Inclusion de p5.js -->
   <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
@@ -11,7 +12,7 @@
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      margin: 0;
+      margin: 0; 
       padding: 0;
     }
     canvas {
@@ -31,23 +32,17 @@
   <p id="errors">Erreurs : 0</p>
 
   <script>
-    /* ------------------------------------------------------------------
-       Variables du jeu
-       ------------------------------------------------------------------ */
     let fallingObjects = [];
     let score = 0;
     let errors = 0;
     const MAX_ERRORS = 10;
 
-    /* ------------------------------------------------------------------
-       p5.js : setup
-       ------------------------------------------------------------------ */
     function setup() {
       createCanvas(800, 600);
       frameRate(30);
-      noCursor(); // Masquer le curseur
+      noCursor(); // Masquer le curseur pour mieux voir le chat
 
-      // Charger les images avant de créer les objets tombants
+      // Charger les images avant de générer les objets
       preloadImages(() => {
         for (let i = 0; i < 6; i++) {
           fallingObjects.push({
@@ -61,11 +56,8 @@
       });
     }
 
-    /* ------------------------------------------------------------------
-       p5.js : draw
-       ------------------------------------------------------------------ */
     function draw() {
-      // Si les images ne sont pas chargées, afficher un message
+      // Si les images ne sont pas encore chargées
       if (!isLoaded) {
         background(200);
         textSize(24);
@@ -75,15 +67,13 @@
         return;
       }
 
-      // Fond gris clair
       background(220);
 
-      // Afficher le chat en bas, centré sur la souris
+      // Afficher le chat
       image(cat, mouseX - 50, height - 100, 100, 100);
 
       // Mettre à jour les objets tombants
       for (let obj of fallingObjects) {
-        // Souris ou objet ?
         if (obj.type === 'mouse') {
           image(mouse, obj.x, obj.y, 50, 50);
         } else {
@@ -92,26 +82,21 @@
 
         obj.y += obj.speed;
 
-        // Réinitialiser si l'objet sort de l'écran
         if (obj.y > height) {
           resetFallingObject(obj);
         }
 
-        // Vérifier la collision avec le chat
         if (
-          obj.y > height - 150 && // environ la hauteur du chat
-          obj.x > mouseX - 50 &&  // limite gauche
-          obj.x < mouseX + 50     // limite droite
+          obj.y > height - 150 && 
+          obj.x > mouseX - 50 && 
+          obj.x < mouseX + 50
         ) {
           if (obj.type === 'mouse') {
             score++;
-            console.log("Miaou !");
           } else {
             errors++;
-            console.log("Feule !");
           }
 
-          // Mettre à jour l'affichage
           document.getElementById('score').textContent  = `Score : ${score}`;
           document.getElementById('errors').textContent = `Erreurs : ${errors}`;
 
@@ -119,7 +104,6 @@
         }
       }
 
-      // Vérifier si on a atteint la limite d'erreurs
       if (errors >= MAX_ERRORS) {
         noLoop();
         textSize(32);
@@ -129,9 +113,6 @@
       }
     }
 
-    /* ------------------------------------------------------------------
-       Réinitialiser un objet
-       ------------------------------------------------------------------ */
     function resetFallingObject(obj) {
       obj.x = random(width);
       obj.y = random(-height, 0);
@@ -142,3 +123,4 @@
   </script>
 </body>
 </html>
+
