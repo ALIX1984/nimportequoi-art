@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Attrape-lettres</title>
+  <title>Apprends avec les Lettres 🖤🎨</title>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
   <style>
     body {
@@ -11,137 +11,196 @@
       text-align: center;
       margin: 0;
       padding: 0;
+      background-color: #f0f8ff;
     }
     canvas {
       display: block;
       margin: 0 auto;
-      background: #f0f0f0;
+    }
+    h1 {
+      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
-  <h1>Attrape-lettres 🎮</h1>
-  <p>Attrapez les lettres colorées dans le bon ordre pour écrire le mot !</p>
+  <h1>Apprends avec les Lettres 🖤🎨</h1>
   <script>
-    /* ------------------------------------------------------------------
-       Variables globales
-       ------------------------------------------------------------------ */
-    const words = [
-      "chat", "chien", "lapin", "renard", "souris", "loup", "dauphin", "perroquet", "éléphant", "tortue", 
-      "table", "chaise", "lampe", "lit", "télévision", "rideau", "canapé", "horloge", "couteau", "fourchette", 
-      "stylo", "cahier", "livre", "tableau", "éponge", "crayon", "bureau", "règle", "sac", "colle", 
-      "arbre", "fleur", "nuage", "pluie", "soleil", "vent", "feuille", "montagne", "rivière", "oiseau"
-    ];
-    let currentWord = "";
-    let letters = [];
-    let caughtLetters = [];
-    let colors = ["red", "blue", "green", "orange", "purple", "pink", "yellow"];
-    let fireworks = [];
-    let fireworkDuration = 0;
+    let wordCategories = {
+      animaux: ["chien", "chat", "oiseau", "serpent", "cheval", "poisson", "lapin", "chèvre", "vache", "singe"],
+      maison: ["table", "chaise", "lampe", "rideau", "lit", "porte", "fenêtre", "canapé", "frigo", "four"],
+      ecole: ["crayon", "stylo", "gomme", "trousse", "livre", "tableau", "cahier", "règle", "cartable", "feutre"],
+      nature: ["arbre", "fleur", "herbe", "montagne", "rivière", "nuage", "pluie", "soleil", "lune", "étoile"]
+    };
 
-    /* ------------------------------------------------------------------
-       Initialisation
-       ------------------------------------------------------------------ */
+    let fallingLetters = [];
+    let currentWord = "";
+    let wordArray = [];
+    let letterSize = 30;
+    let collectedLetters = [];
+    let letterColors = [];
+    let fireworks = [];
+    let gameState = "playing";
+    let categories = Object.keys(wordCategories);
+    let categoryIndex = 0;
+    let music;
+
+    function preload() {
+      music = loadSound('https://freesound.org/data/previews/616/616192_5674468-lq.mp3');
+    }
+
     function setup() {
       createCanvas(800, 600);
-      frameRate(30);
-      startNewWord();
+      textAlign(CENTER, CENTER);
+      rectMode(CENTER);
+
+      music.loop();
+      resetGame();
     }
 
     function draw() {
       background(240);
 
-      if (fireworkDuration > 0) {
-        displayFireworks();
-        fireworkDuration--;
-        if (fireworkDuration === 0) {
-          startNewWord();
-        }
-        return;
+      // Afficher le mot en bas
+      for (let i = 0; i < wordArray.length; i++) {
+        fill(collectedLetters.includes(wordArray[i]) ? letterColors[i] : 0);
+        text(wordArray[i], width / 2 - (wordArray.length * letterSize) / 2 + i * letterSize, height - 50);
       }
 
-      displayWord();
-      updateLetters();
-    }
-
-    /* ------------------------------------------------------------------
-       Gestion des mots et des lettres
-       ------------------------------------------------------------------ */
-    function startNewWord() {
-      currentWord = random(words);
-      caughtLetters = Array(currentWord.length).fill("");
-      letters = [];
-      for (let i = 0; i < currentWord.length; i++) {
-        let color;
-        do {
-          color = random(colors);
-        } while (caughtLetters.includes(color));
-        letters.push({
-          letter: currentWord[i],
-          x: random(width),
-          y: random(-200, -50),
-          speed: random(2, 5),
-          color: color,
-        });
-      }
-    }
-
-    function displayWord() {
-      textAlign(CENTER, CENTER);
-      textSize(48);
-      for (let i = 0; i < currentWord.length; i++) {
-        fill(caughtLetters[i] || "black");
-        text(currentWord[i], width / 2 - currentWord.length * 25 + i * 50, height - 50);
-      }
-    }
-
-    function updateLetters() {
-      for (let letter of letters) {
+      // Gérer les lettres qui tombent
+      for (let i = fallingLetters.length - 1; i >= 0; i--) {
+        let letter = fallingLetters[i];
         fill(letter.color);
-        textSize(32);
-        text(letter.letter, letter.x, letter.y);
-
+        text(letter.char, letter.x, letter.y);
         letter.y += letter.speed;
 
-        if (letter.y > height - 100 && letter.x > mouseX - 50 && letter.x < mouseX + 50) {
-          let index = caughtLetters.findIndex((l) => l === "");
-          if (index !== -1 && currentWord[index] === letter.letter) {
-            caughtLetters[index] = letter.color;
-            letter.y = height + 100; // Remove the letter from the screen
+        if (dist(mouseX, height - 50, letter.x, letter.y) < letterSize / 2) {
+          fallingLetters.splice(i, 1);
+          if (wordArray.includes(letter.char)) {
+            collectedLetters.push(letter.char);
+            if (collectedLetters.length === wordArray.length && arraysEqual(collectedLetters, wordArray)) {
+              gameState = "won";
+              music.stop();
+              triggerFireworks();
+              setTimeout(resetGame, 3000);
+            }
           }
+        } else if (letter.y > height) {
+          fallingLetters.splice(i, 1);
         }
       }
 
-      if (!caughtLetters.includes("")) {
-        fireworkDuration = 90; // 90 frames of fireworks
+      // Gérer les feux d'artifice
+      for (let i = fireworks.length - 1; i >= 0; i--) {
+        let fw = fireworks[i];
+        fw.show();
+        fw.update();
+        if (fw.done()) fireworks.splice(i, 1);
+      }
+
+      if (gameState === "won") {
+        textSize(40);
+        fill(0);
+        text("Bravo ! 🎉", width / 2, height / 2);
       }
     }
 
-    /* ------------------------------------------------------------------
-       Feux d'artifice
-       ------------------------------------------------------------------ */
-    function displayFireworks() {
-      if (frameCount % 5 === 0) {
-        fireworks.push({
+    function resetGame() {
+      gameState = "playing";
+      collectedLetters = [];
+      letterColors = [];
+      fallingLetters = [];
+      currentWord = getNextWord();
+      wordArray = currentWord.split("");
+
+      for (let i = 0; i < wordArray.length; i++) {
+        letterColors.push(color(random(255), random(255), random(255)));
+      }
+
+      spawnLetters();
+    }
+
+    function getNextWord() {
+      let category = categories[categoryIndex];
+      categoryIndex = (categoryIndex + 1) % categories.length;
+      return random(wordCategories[category]);
+    }
+
+    function spawnLetters() {
+      for (let i = 0; i < 20; i++) {
+        let char = random(currentWord.split("").concat(random("abcdefghijklmnopqrstuvwxyz")));
+        fallingLetters.push({
+          char: char,
           x: random(width),
-          y: random(height / 2),
-          size: random(20, 50),
-          color: random(colors),
+          y: random(-300, -50),
+          speed: random(2, 5),
+          color: color(random(255), random(255), random(255))
         });
       }
+    }
 
-      for (let firework of fireworks) {
-        fill(firework.color);
-        ellipse(firework.x, firework.y, firework.size);
+    function arraysEqual(a, b) {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    class Firework {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.particles = [];
+        for (let i = 0; i < 100; i++) {
+          this.particles.push(new Particle(x, y));
+        }
+      }
+
+      show() {
+        for (let p of this.particles) {
+          p.show();
+        }
+      }
+
+      update() {
+        for (let p of this.particles) {
+          p.update();
+        }
+      }
+
+      done() {
+        return this.particles.every(p => p.done());
       }
     }
 
-    /* ------------------------------------------------------------------
-       Interaction utilisateur
-       ------------------------------------------------------------------ */
-    function mouseMoved() {
-      mouseX = constrain(mouseX, 50, width - 50);
+    class Particle {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = random(-2, 2);
+        this.vy = random(-2, 2);
+        this.alpha = 255;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= 5;
+      }
+
+      done() {
+        return this.alpha <= 0;
+      }
+
+      show() {
+        noStroke();
+        fill(255, this.alpha);
+        ellipse(this.x, this.y, 5);
+      }
+    }
+
+    function triggerFireworks() {
+      for (let i = 0; i < 5; i++) {
+        fireworks.push(new Firework(random(width), random(height / 2)));
+      }
     }
   </script>
 </body>
 </html>
+
