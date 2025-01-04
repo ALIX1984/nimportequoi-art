@@ -2,147 +2,218 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Apprends avec les Lettres 🖤🎨</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-  <!-- Désactiver temporairement p5.sound si problème persiste -->
+  <!-- En cas de besoin, activer p5.sound si vous voulez mettre des sons -->
   <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js-sound/1.6.0/p5.sound.min.js"></script>-->
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
       margin: 0;
       padding: 0;
       background-color: #f0f8ff;
+      font-family: Arial, sans-serif;
+      text-align: center;
     }
     canvas {
       display: block;
       margin: 0 auto;
     }
     h1 {
-      margin-top: 1rem;
+      margin: 1rem 0 0.5rem;
+    }
+    p {
+      margin: 0 0 1rem;
     }
   </style>
 </head>
 <body>
   <h1>Apprends avec les Lettres 🖤🎨</h1>
   <p>Déplacez la souris pour attraper les lettres et former le mot cible !</p>
+
   <script>
-    let fallingLetters = [];
+    // -- LISTE DE CATEGORIES ET DE MOTS --
     let wordCategories = {
       animaux: ["chien", "chat", "oiseau", "serpent", "cheval"],
       maison: ["table", "chaise", "lampe", "rideau", "lit"],
-      ecole: ["crayon", "stylo", "gomme", "trousse", "livre"],
+      ecole:  ["crayon", "stylo", "gomme", "trousse", "livre"],
       nature: ["arbre", "fleur", "herbe", "montagne", "rivière"]
     };
 
-    let currentWord = "";
-    let wordArray = [];
-    let collectedLetters = [];
-    let letterColors = [];
+    // -- VARIABLES GLOBALES --
+    let currentWord = "";       // Le mot choisi
+    let wordArray = [];         // currentWord découpé en caractères
+    let collectedLetters = [];  // Lettres que le joueur a récupérées
+    let letterColors = [];      // Couleurs associées à chaque lettre du mot
+
+    // Tableau qui contient toutes les lettres qui tombent
+    let fallingLetters = [];
+
+    // Pour gérer l'état du jeu : "playing" ou "won"
     let gameState = "playing";
 
+    // -- p5.js: SETUP --
     function setup() {
       createCanvas(800, 600);
       textAlign(CENTER, CENTER);
       resetGame();
     }
 
+    // -- p5.js: DRAW (boucle de rendu) --
     function draw() {
       background(240);
 
       if (gameState === "playing") {
         displayWord();
         updateFallingLetters();
-      } else if (gameState === "won") {
+
+        // Tant que le mot n'est pas complété, on essaie d'avoir un minimum de lettres à l'écran
+        if (fallingLetters.length < 10 && !arraysEqual(collectedLetters, wordArray)) {
+          spawnLetters(3); // On ajoute un petit groupe de 3 lettres
+        }
+      } 
+      else if (gameState === "won") {
         displayVictory();
       }
     }
 
+    // -- REMETTRE LE JEU A ZERO --
     function resetGame() {
       gameState = "playing";
       collectedLetters = [];
       letterColors = [];
       fallingLetters = [];
+
+      // Choisir un nouveau mot
       currentWord = getNextWord();
+      // Transformer le mot en tableau de caractères
       wordArray = currentWord.split("");
 
+      // Générer une couleur différente pour chaque lettre du mot
       for (let i = 0; i < wordArray.length; i++) {
         letterColors.push(color(random(255), random(255), random(255)));
       }
 
-      spawnLetters();
+      // Pour démarrer, on ajoute quelques lettres qui tombent
+      spawnLetters(5);
     }
 
+    // -- CHOISIR UN MOT ALEATOIRE PARMI LES CATEGORIES --
     function getNextWord() {
       let categories = Object.keys(wordCategories);
       let category = random(categories);
       return random(wordCategories[category]);
     }
 
-    function spawnLetters() {
-      for (let i = 0; i < 15; i++) {
-        let char = random(wordArray.concat(random("abcdefghijklmnopqrstuvwxyz")));
+    // -- FAIRE APPARAITRE N LETTRES QUI TOMBENT --
+    // Certaines correspondent au mot, d'autres sont aléatoires
+    function spawnLetters(n) {
+      for (let i = 0; i < n; i++) {
+        // On choisit aléatoirement entre :
+        // 1) Une lettre du mot
+        // 2) Une lettre prise au hasard dans l'alphabet
+        let dice = random(1);
+        let char;
+        if (dice < 0.5) {
+          // 50% de chance de prendre une lettre du mot
+          char = random(wordArray);
+        } else {
+          // 50% de chance de prendre une lettre random
+          char = random("abcdefghijklmnopqrstuvwxyz");
+        }
+
+        // On crée l'objet lettre qui tombe
         fallingLetters.push({
           char: char,
-          x: random(width),
-          y: random(-300, -50),
-          speed: random(2, 5),
+          x: random(width),       // position X aléatoire
+          y: random(-300, -50),   // position Y pour tomber de "haut"
+          speed: random(1, 2.5),  // vitesse de chute
           color: color(random(255), random(255), random(255))
         });
       }
     }
 
+    // -- AFFICHER LE MOT EN BAS DE L'ECRAN --
     function displayWord() {
       for (let i = 0; i < wordArray.length; i++) {
-        fill(collectedLetters.includes(wordArray[i]) ? letterColors[i] : 0);
-        textSize(24);
-        text(wordArray[i], mouseX - (wordArray.length * 12) / 2 + i * 24, height - 50);
+        // Si la lettre est déjà collectée, on l'affiche dans sa couleur
+        // Sinon, on l'affiche en noir (0)
+        if (collectedLetters.includes(wordArray[i])) {
+          fill(letterColors[i]);
+        } else {
+          fill(0);
+        }
+
+        textSize(32);
+        // On aligne les lettres du mot autour de la souris
+        // => libre à toi de changer la position si tu veux
+        text(wordArray[i], mouseX - (wordArray.length * 16)/2 + i * 32, height - 50);
       }
     }
 
+    // -- METTRE A JOUR LES LETTRES QUI TOMBENT --
     function updateFallingLetters() {
+      // On parcourt le tableau de la fin vers le début,
+      // car on va potentiellement enlever des lettres (splice)
       for (let i = fallingLetters.length - 1; i >= 0; i--) {
         let letter = fallingLetters[i];
+
+        // Affichage
         fill(letter.color);
-        textSize(24);
+        textSize(28);
         text(letter.char, letter.x, letter.y);
+
+        // Faire tomber la lettre (incrément de y)
         letter.y += letter.speed;
 
-        if (
-          dist(
-            mouseX + wordArray.indexOf(letter.char) * 24 - (wordArray.length * 12),
-            height - 50,
-            letter.x,
-            letter.y
-          ) < 20
-        ) {
+        // Détecter la collision avec la zone du joueur 
+        // (ici, la "zone" est proche de la souris, autour du mot affiché)
+        // On teste la distance avec la position d'une des lettres du mot
+        // Pour simplifier, on vérifie la distance avec la position "centrale" du mot
+        let px = mouseX; 
+        let py = height - 50;
+
+        if (dist(px, py, letter.x, letter.y) < 35) {
+          // On retire la lettre de l'écran
           fallingLetters.splice(i, 1);
+
+          // Si la lettre collectée fait partie du mot, on l'ajoute au tableau collectedLetters
+          // (si elle n'y est pas déjà)
           if (wordArray.includes(letter.char) && !collectedLetters.includes(letter.char)) {
             collectedLetters.push(letter.char);
+            
+            // Vérifier si le joueur a collecté toutes les lettres du mot
+            // => arraysEqual() compare le contenu trié
             if (arraysEqual(collectedLetters, wordArray)) {
               gameState = "won";
+              // Après 2 secondes, on relance un nouveau mot
               setTimeout(resetGame, 2000);
             }
           }
-        } else if (letter.y > height) {
+        }
+        // Si la lettre sort du cadre (en bas), on la supprime aussi
+        else if (letter.y > height + 50) {
           fallingLetters.splice(i, 1);
         }
       }
     }
 
+    // -- AFFICHAGE DE LA VICTOIRE --
     function displayVictory() {
       textSize(48);
       fill(0, 200, 0);
       text("Bravo ! 🎉", width / 2, height / 2);
     }
 
+    // -- COMPARER DEUX TABLEAUX PEU IMPORTE L'ORDRE --
+    // On compare leur représentation JSON après tri
     function arraysEqual(a, b) {
-      return JSON.stringify(a.sort()) === JSON.stringify(b.sort());
+      // slice() pour éviter de muter les originaux
+      return JSON.stringify(a.slice().sort()) === JSON.stringify(b.slice().sort());
     }
   </script>
 </body>
 </html>
+
 
 
 
