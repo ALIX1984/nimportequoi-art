@@ -2,21 +2,21 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Apprends avec les Lettres 🖤🎨</title>
+  <title>Apprends les Lettres dans l'Espace</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-  <!-- p5.sound (optionnel si tu veux des sons) -->
-  <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js-sound/1.6.0/p5.sound.min.js"></script>-->
   <style>
     body {
       margin: 0;
       padding: 0;
-      background-color: #f0f8ff;
+      background-color: #000; /* Espace sombre */
       font-family: Arial, sans-serif;
+      color: white;
       text-align: center;
     }
     canvas {
       display: block;
       margin: 0 auto;
+      background: #111; /* Fond "espace" */
     }
     h1 {
       margin: 1rem 0 0.5rem;
@@ -27,198 +27,359 @@
   </style>
 </head>
 <body>
-  <h1>Apprends avec les Lettres 🖤🎨</h1>
-  <p>Utilisez la souris pour déplacer le "vaisseau" et attraper les lettres dans le bon ordre !</p>
+  <h1>Apprends les Lettres dans l'Espace</h1>
+  <p>Utilisez les flèches pour déplacer le vaisseau, évitez les astéroïdes, et collectez les bonnes lettres dans l’ordre !</p>
 
   <script>
-    // -- CATEGORIES ET MOTS --
+    /****************************
+     * 1) CONFIGURATION DU JEU  *
+     ****************************/
+
+    // Liste de catégories et de mots (exemple)
     let wordCategories = {
-      animaux: ["chien", "chat", "oiseau", "serpent", "cheval"],
-      maison: ["table", "chaise", "lampe", "rideau", "lit"],
-      ecole:  ["crayon", "stylo", "gomme", "trousse", "livre"],
-      nature: ["arbre", "fleur", "herbe", "montagne", "rivière"]
+      animaux: ["chat", "chien", "oiseau", "cheval", "serpent"],
+      nature: ["arbre", "fleur", "herbe", "montagne", "rivière"],
+      ecole:  ["crayon", "gomme", "stylo", "livre", "trousse"]
+      // Ajoute d'autres catégories si tu veux
     };
 
-    // -- VARIABLES GLOBALES --
-    let currentWord = "";       // Le mot choisi
-    let wordArray = [];         // currentWord découpé en caractères
-    let letterColors = [];      // Couleurs associées à chaque lettre du mot
-    let nextLetterIndex = 0;    // Indique la prochaine lettre à attraper dans l'ordre
+    // Taille de l'espace de jeu
+    let screenW = 800;
+    let screenH = 600;
 
-    // Lettres qui tombent
-    let fallingLetters = [];
+    // Nombre d'astéroïdes à générer
+    let nbAsteroids = 6; 
 
-    // Vaisseau (on le déplace avec la souris)
-    let spaceshipY;
-    let spaceshipWidth = 60;
-    let spaceshipHeight = 20;
+    // Nombre de planètes-lettres (certaines seront utiles, d'autres non)
+    let nbLetters = 10;
 
-    // Etats de jeu : "playing" ou "won"
+
+    /**************************
+     * 2) VARIABLES GLOBALES *
+     **************************/
+
+    // Le mot à apprendre
+    let currentWord = "";
+    let wordArray = [];         // ex: ["m", "o", "n", "t", "a", "g", "n", "e"]
+    let nextLetterIndex = 0;    // Prochaine lettre à collecter dans le mot
+
+    // Le vaisseau
+    let spaceship = {
+      x: screenW / 2,
+      y: screenH / 2,
+      speed: 3,
+      size: 30
+    };
+
+    // Astéroïdes (tableau d'objets {x, y, r, vx, vy})
+    let asteroids = [];
+
+    // Planètes-lettres (tableau d'objets {x, y, letter, r})
+    let letterPlanets = [];
+
+    // État du jeu : "playing" ou "won" ou "lost"
     let gameState = "playing";
 
-    // -- SETUP p5.js --
+
+    /***********************
+     * 3) SETUP DE P5.JS   *
+     ***********************/
     function setup() {
-      createCanvas(800, 600);
-      textAlign(CENTER, CENTER);
-
-      // Position verticale du vaisseau (on fixe y, x dépendra de la souris)
-      spaceshipY = height - 80;
-
+      createCanvas(screenW, screenH);
       resetGame();
     }
 
-    // -- BOUCLE DE DESSIN p5.js --
+    /**********************
+     * 4) BOUCLE DRAW     *
+     **********************/
     function draw() {
-      background(240);
+      background(10);  // Espace sombre
 
       if (gameState === "playing") {
-        displayWord();         // Affiche le mot en haut
-        displaySpaceship();    // Affiche le « vaisseau » en bas
-        updateFallingLetters(); // Met à jour et affiche les lettres
-
-        // Si on n'a pas encore fini le mot,
-        // on fait en sorte qu'il y ait toujours suffisamment de lettres qui tombent.
-        if (nextLetterIndex < wordArray.length && fallingLetters.length < 10) {
-          spawnLetters(3); 
-        }
+        handleInput();
+        updateSpaceship();
+        checkCollisions();
+        
+        // Affichage
+        drawAsteroids();
+        drawLetterPlanets();
+        drawSpaceship();
+        displayWordProgress();
       } 
       else if (gameState === "won") {
         displayVictory();
+      } 
+      else if (gameState === "lost") {
+        displayDefeat();
       }
     }
 
-    // -- REDEMARRER UNE PARTIE --
+
+    /****************************
+     * 5) GESTION DU JEU       *
+     ****************************/
     function resetGame() {
       gameState = "playing";
-      fallingLetters = [];
       nextLetterIndex = 0;
 
-      // Choisir un nouveau mot aléatoirement
-      currentWord = getNextWord();
-      // Le transformer en tableau de caractères
+      // Choisir un mot
+      currentWord = getRandomWord();
       wordArray = currentWord.split("");
-      // Générer les couleurs (une par caractère)
-      letterColors = wordArray.map(() => color(random(255), random(255), random(255)));
 
-      // Lancer quelques lettres pour démarrer
-      spawnLetters(5);
+      // Recréer les astéroïdes et les planètes-lettres
+      asteroids = [];
+      letterPlanets = [];
+
+      createAsteroids(nbAsteroids);
+      createLetterPlanets(nbLetters);
     }
 
-    // -- CHOIX ALEATOIRE D'UN MOT --
-    function getNextWord() {
+    // Sélectionne un mot aléatoirement
+    function getRandomWord() {
       let categories = Object.keys(wordCategories);
-      let category = random(categories);
-      return random(wordCategories[category]);
+      let cat = random(categories);
+      return random(wordCategories[cat]);
     }
 
-    // -- FAIRE APPARAITRE N LETTRES QUI TOMBENT --
-    // (parmi le mot et/ou l'alphabet)
-    function spawnLetters(n) {
+    // Création aléatoire d'astéroïdes
+    function createAsteroids(n) {
       for (let i = 0; i < n; i++) {
-        let dice = random(1);
-        let char;
-
-        // 50% de chances de prendre une lettre du mot
-        // 50% de chances de prendre une lettre au hasard de l'alphabet
-        if (dice < 0.5) {
-          char = random(wordArray);
-        } else {
-          char = random("abcdefghijklmnopqrstuvwxyz");
-        }
-
-        fallingLetters.push({
-          char: char,
+        asteroids.push({
           x: random(width),
-          y: random(-300, -50),
-          speed: random(1, 2.5),
-          color: color(random(255), random(255), random(255))
+          y: random(height),
+          r: random(20, 40),        // taille
+          vx: random(-1, 1),        // vitesse x
+          vy: random(-1, 1)         // vitesse y
         });
       }
     }
 
-    // -- AFFICHER LE MOT EN HAUT DE L'ECRAN --
-    // Les lettres déjà validées (jusqu'à nextLetterIndex) sont en couleur,
-    // les lettres restantes sont en noir.
-    function displayWord() {
+    // Création aléatoire de planètes-lettres
+    // On veut être sûr que TOUTES les lettres du mot y soient
+    // + d'autres lettres aléatoires
+    function createLetterPlanets(n) {
+      // D'abord, on place chaque lettre du mot
+      for (let i = 0; i < wordArray.length; i++) {
+        letterPlanets.push({
+          letter: wordArray[i],
+          x: random(width),
+          y: random(height),
+          r: 20
+        });
+      }
+
+      // Compléter jusqu'à en avoir n
+      // en piochant des lettres aléatoires dans l'alphabet
+      while (letterPlanets.length < n) {
+        let randomLetter = random("abcdefghijklmnopqrstuvwxyz");
+        letterPlanets.push({
+          letter: randomLetter,
+          x: random(width),
+          y: random(height),
+          r: 20
+        });
+      }
+    }
+
+    // Savoir si on a collecté toutes les lettres
+    function allLettersCollected() {
+      return (nextLetterIndex >= wordArray.length);
+    }
+
+
+    /****************************
+     * 6) LOGIQUE DU JOUEUR     *
+     ****************************/
+
+    // Gestion des touches fléchées pour déplacer le vaisseau
+    function handleInput() {
+      // Gauche
+      if (keyIsDown(LEFT_ARROW)) {
+        spaceship.x -= spaceship.speed;
+      }
+      // Droite
+      if (keyIsDown(RIGHT_ARROW)) {
+        spaceship.x += spaceship.speed;
+      }
+      // Haut
+      if (keyIsDown(UP_ARROW)) {
+        spaceship.y -= spaceship.speed;
+      }
+      // Bas
+      if (keyIsDown(DOWN_ARROW)) {
+        spaceship.y += spaceship.speed;
+      }
+      // On peut rajouter ZQSD si on le souhaite.
+    }
+
+    // Empêcher le vaisseau de sortir de l'écran (optionnel)
+    function updateSpaceship() {
+      spaceship.x = constrain(spaceship.x, 0 + spaceship.size/2, width - spaceship.size/2);
+      spaceship.y = constrain(spaceship.y, 0 + spaceship.size/2, height - spaceship.size/2);
+    }
+
+    // Détection collisions : 
+    // - Vaisseau vs astéroïdes => "lost"
+    // - Vaisseau vs planètes-lettres => vérifier si c’est la bonne suivante
+    function checkCollisions() {
+      // 1) Collision vaisseau-astéroïde ?
+      for (let i = 0; i < asteroids.length; i++) {
+        let a = asteroids[i];
+        
+        // On peut faire un simple test de distance
+        let d = dist(spaceship.x, spaceship.y, a.x, a.y);
+        if (d < (spaceship.size/2 + a.r)) {
+          gameState = "lost";
+          return;
+        }
+      }
+
+      // 2) Collision vaisseau-lettre ?
+      for (let i = letterPlanets.length - 1; i >= 0; i--) {
+        let lp = letterPlanets[i];
+        let d = dist(spaceship.x, spaceship.y, lp.x, lp.y);
+        if (d < (spaceship.size/2 + lp.r)) {
+          // Est-ce la bonne lettre ?
+          if (lp.letter === wordArray[nextLetterIndex]) {
+            // On avance dans la progression du mot
+            nextLetterIndex++;
+            // On retire cette planète-lettre de la liste
+            letterPlanets.splice(i, 1);
+
+            // Si on a complété tout le mot
+            if (allLettersCollected()) {
+              gameState = "won";
+            }
+          } else {
+            // Mauvaise lettre => on la laisse ou on la retire ?
+            // Ici, on va juste la retirer (ou on pourrait la laisser)
+            letterPlanets.splice(i, 1);
+          }
+        }
+      }
+    }
+
+
+    /****************************
+     * 7) AFFICHAGES VISUELS    *
+     ****************************/
+
+    // Dessiner le vaisseau (un simple triangle ou un cercle)
+    function drawSpaceship() {
+      push();
+      fill(100, 200, 255);
+      noStroke();
+      translate(spaceship.x, spaceship.y);
+      // Un petit triangle pour donner l'impression d'un vaisseau
+      // pointant vers le haut
+      beginShape();
+      vertex(-spaceship.size/2, spaceship.size/2);
+      vertex(spaceship.size/2, spaceship.size/2);
+      vertex(0, -spaceship.size/2);
+      endShape(CLOSE);
+      pop();
+    }
+
+    // Mettre à jour et dessiner chaque astéroïde (ils se déplacent un peu)
+    function drawAsteroids() {
+      for (let i = 0; i < asteroids.length; i++) {
+        let a = asteroids[i];
+        
+        // Mise à jour position
+        a.x += a.vx;
+        a.y += a.vy;
+
+        // Rebondir sur les bords
+        if (a.x < 0 || a.x > width) {
+          a.vx *= -1;
+        }
+        if (a.y < 0 || a.y > height) {
+          a.vy *= -1;
+        }
+
+        // Dessin
+        push();
+        noStroke();
+        fill(140);
+        circle(a.x, a.y, a.r * 2);
+        pop();
+      }
+    }
+
+    // Dessiner les planètes-lettres (fixes)
+    function drawLetterPlanets() {
+      for (let i = 0; i < letterPlanets.length; i++) {
+        let lp = letterPlanets[i];
+
+        // Planète
+        push();
+        fill(200, 150, 50);
+        noStroke();
+        circle(lp.x, lp.y, lp.r * 2);
+        pop();
+
+        // Lettre
+        push();
+        fill(0);
+        textAlign(CENTER, CENTER);
+        textSize(20);
+        text(lp.letter, lp.x, lp.y);
+        pop();
+      }
+    }
+
+    // Afficher la progression du mot en haut de l'écran
+    // Les lettres déjà validées s'affichent en couleur, les autres en gris
+    function displayWordProgress() {
+      push();
       textSize(32);
       for (let i = 0; i < wordArray.length; i++) {
         if (i < nextLetterIndex) {
-          fill(letterColors[i]);
+          // Lettre validée
+          fill(0, 255, 0);
         } else {
-          fill(0); // Lettres non collectées : noir
+          // Lettre non encore trouvée
+          fill(150);
         }
-
-        // On les aligne en haut, disposées avec un léger espacement
-        text(wordArray[i], 100 + i * 40, 50);
+        text(wordArray[i], 50 + i * 30, 50);
       }
+      pop();
     }
 
-    // -- AFFICHER LE VAISSEAU (UN SIMPLE RECTANGLE) EN BAS --
-    function displaySpaceship() {
-      // On met le "vaisseau" au niveau de la souris en X,
-      // mais on le bloque pour qu'il ne sorte pas de l'écran
-      let spaceshipX = constrain(mouseX, spaceshipWidth/2, width - spaceshipWidth/2);
-
-      fill(100);
-      rectMode(CENTER);
-      rect(spaceshipX, spaceshipY, spaceshipWidth, spaceshipHeight);
-    }
-
-    // -- METTRE A JOUR LES LETTRES QUI TOMBENT ET DETECTER LES COLLISIONS --
-    function updateFallingLetters() {
-      // On utilise la position du "vaisseau" pour checker la collision
-      let spaceshipX = constrain(mouseX, spaceshipWidth/2, width - spaceshipWidth/2);
-
-      for (let i = fallingLetters.length - 1; i >= 0; i--) {
-        let letter = fallingLetters[i];
-
-        // On dessine la lettre
-        fill(letter.color);
-        textSize(28);
-        text(letter.char, letter.x, letter.y);
-
-        // Elle tombe
-        letter.y += letter.speed;
-
-        // Verification de collision avec le vaisseau
-        // On considère le vaisseau comme un rectangle => test simplifié
-        if (
-          letter.x > spaceshipX - spaceshipWidth/2 &&
-          letter.x < spaceshipX + spaceshipWidth/2 &&
-          letter.y > spaceshipY - spaceshipHeight/2 &&
-          letter.y < spaceshipY + spaceshipHeight/2
-        ) {
-          // On a attrapé la lettre
-          fallingLetters.splice(i, 1);
-
-          // Vérifier si c'est la bonne lettre (dans l'ordre)
-          // => On compare letter.char avec wordArray[nextLetterIndex]
-          if (letter.char === wordArray[nextLetterIndex]) {
-            nextLetterIndex++;
-            // Si on a récupéré toutes les lettres du mot
-            if (nextLetterIndex === wordArray.length) {
-              gameState = "won";
-              // Après 2 secondes, relancer un mot
-              setTimeout(resetGame, 2000);
-            }
-          }
-        }
-        // Si la lettre sort de l'écran, on la retire aussi
-        else if (letter.y > height + 50) {
-          fallingLetters.splice(i, 1);
-        }
-      }
-    }
-
-    // -- ECRAN DE VICTOIRE --
+    // Écran de victoire
     function displayVictory() {
-      textSize(48);
-      fill(0, 200, 0);
-      text("Bravo ! 🎉", width / 2, height / 2);
+      background(0, 150, 0);
+      fill(255);
+      textAlign(CENTER, CENTER);
+      textSize(50);
+      text("Bravo !", width / 2, height / 2);
+
+      // Pour relancer le jeu (ex: au clic)
+      // textSize(20);
+      // text("Cliquez pour rejouer", width / 2, height / 2 + 40);
+      // => Si besoin, un mousePressed() qui fait resetGame()
     }
+
+    // Écran de défaite
+    function displayDefeat() {
+      background(150, 0, 0);
+      fill(255);
+      textAlign(CENTER, CENTER);
+      textSize(50);
+      text("Perdu !", width / 2, height / 2);
+    }
+
+    // (Optionnel) Rejouer en cliquant
+    // function mousePressed() {
+    //   if (gameState === "won" || gameState === "lost") {
+    //     resetGame();
+    //   }
+    // }
+
   </script>
 </body>
 </html>
+
 
 
 
