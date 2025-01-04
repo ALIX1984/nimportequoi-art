@@ -4,10 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Apprends avec les Lettres 🖤🎨</title>
-  <!-- Inclusion de p5.js -->
   <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
-  <!-- Inclusion de p5.sound.js -->
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/addons/p5.sound.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -27,9 +24,7 @@
 </head>
 <body>
   <h1>Apprends avec les Lettres 🖤🎨</h1>
-  <p>Utilisez la souris pour déplacer le mot en bas et attraper les lettres colorées !</p>
-  <p id="score">Score : 0</p>
-
+  <p>Déplacez la souris pour attraper les lettres et former le mot cible !</p>
   <script>
     let fallingLetters = [];
     let wordCategories = {
@@ -45,72 +40,20 @@
     let letterColors = [];
     let gameState = "playing";
 
-    let backgroundMusic;
-
-    function preload() {
-      // Charger la musique de fond
-      backgroundMusic = loadSound("https://cdn.jsdelivr.net/gh/greghub/p5-assets/audio/loop.mp3", () => {
-        console.log("Musique de fond chargée !");
-      });
-    }
-
     function setup() {
       createCanvas(800, 600);
       textAlign(CENTER, CENTER);
-      rectMode(CENTER);
       resetGame();
-
-      // Jouer la musique de fond en boucle
-      if (backgroundMusic) {
-        backgroundMusic.setVolume(0.5);
-        backgroundMusic.loop();
-      }
     }
 
     function draw() {
       background(240);
 
       if (gameState === "playing") {
-        // Afficher le mot cible en bas de l'écran
-        for (let i = 0; i < wordArray.length; i++) {
-          fill(collectedLetters.includes(wordArray[i]) ? letterColors[i] : 0);
-          textSize(24); // Taille ajustée
-          text(wordArray[i], mouseX - (wordArray.length * 12) / 2 + i * 24, height - 50);
-        }
-
-        // Afficher et gérer les lettres tombantes
-        for (let i = fallingLetters.length - 1; i >= 0; i--) {
-          let letter = fallingLetters[i];
-          fill(letter.color);
-          textSize(24);
-          text(letter.char, letter.x, letter.y);
-          letter.y += letter.speed;
-
-          // Vérifier collision avec les lettres du mot cible
-          if (
-            dist(
-              mouseX + wordArray.indexOf(letter.char) * 24 - (wordArray.length * 12),
-              height - 50,
-              letter.x,
-              letter.y
-            ) < 12
-          ) {
-            fallingLetters.splice(i, 1);
-            if (wordArray.includes(letter.char) && !collectedLetters.includes(letter.char)) {
-              collectedLetters.push(letter.char);
-              if (arraysEqual(collectedLetters, wordArray)) {
-                gameState = "won";
-                setTimeout(resetGame, 2000);
-              }
-            }
-          } else if (letter.y > height) {
-            fallingLetters.splice(i, 1);
-          }
-        }
+        displayWord();
+        updateFallingLetters();
       } else if (gameState === "won") {
-        textSize(48);
-        fill(0, 200, 0);
-        text("Bravo ! 🎉", width / 2, height / 2);
+        displayVictory();
       }
     }
 
@@ -132,8 +75,7 @@
     function getNextWord() {
       let categories = Object.keys(wordCategories);
       let category = random(categories);
-      let word = random(wordCategories[category]);
-      return word;
+      return random(wordCategories[category]);
     }
 
     function spawnLetters() {
@@ -149,12 +91,57 @@
       }
     }
 
+    function displayWord() {
+      for (let i = 0; i < wordArray.length; i++) {
+        fill(collectedLetters.includes(wordArray[i]) ? letterColors[i] : 0);
+        textSize(24);
+        text(wordArray[i], mouseX - (wordArray.length * 12) / 2 + i * 24, height - 50);
+      }
+    }
+
+    function updateFallingLetters() {
+      for (let i = fallingLetters.length - 1; i >= 0; i--) {
+        let letter = fallingLetters[i];
+        fill(letter.color);
+        textSize(24);
+        text(letter.char, letter.x, letter.y);
+        letter.y += letter.speed;
+
+        if (
+          dist(
+            mouseX + wordArray.indexOf(letter.char) * 24 - (wordArray.length * 12),
+            height - 50,
+            letter.x,
+            letter.y
+          ) < 20
+        ) {
+          fallingLetters.splice(i, 1);
+          if (wordArray.includes(letter.char) && !collectedLetters.includes(letter.char)) {
+            collectedLetters.push(letter.char);
+            if (arraysEqual(collectedLetters, wordArray)) {
+              gameState = "won";
+              setTimeout(resetGame, 2000);
+            }
+          }
+        } else if (letter.y > height) {
+          fallingLetters.splice(i, 1);
+        }
+      }
+    }
+
+    function displayVictory() {
+      textSize(48);
+      fill(0, 200, 0);
+      text("Bravo ! 🎉", width / 2, height / 2);
+    }
+
     function arraysEqual(a, b) {
-      return JSON.stringify(a) === JSON.stringify(b);
+      return JSON.stringify(a.sort()) === JSON.stringify(b.sort());
     }
   </script>
 </body>
 </html>
+
 
 
 
