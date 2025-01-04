@@ -28,7 +28,8 @@
 </head>
 <body>
   <h1>Apprends les Lettres dans l'Espace</h1>
-  <p>Utilisez les flèches pour déplacer le vaisseau, évitez les astéroïdes, et collectez les bonnes lettres dans l’ordre !</p>
+  <!-- Pour une version souris/tactile : on peut adapter le texte ci-dessous -->
+  <p>Déplace le vaisseau en déplaçant la souris (ou le doigt) et collecte les lettres dans l’ordre tout en évitant les astéroïdes !</p>
 
   <script>
     /****************************
@@ -96,7 +97,8 @@
       background(10);  // Espace sombre
 
       if (gameState === "playing") {
-        handleInput();
+        // Le vaisseau suit la position actuelle de la souris
+        handleMouseInput();
         updateSpaceship();
         checkCollisions();
         
@@ -105,11 +107,11 @@
         drawLetterPlanets();
         drawSpaceship();
         displayWordProgress();
-      } 
-      else if (gameState === "won") {
+
+      } else if (gameState === "won") {
         displayVictory();
-      } 
-      else if (gameState === "lost") {
+
+      } else if (gameState === "lost") {
         displayDefeat();
       }
     }
@@ -125,6 +127,10 @@
       // Choisir un mot
       currentWord = getRandomWord();
       wordArray = currentWord.split("");
+
+      // Remettre le vaisseau au centre
+      spaceship.x = screenW / 2;
+      spaceship.y = screenH / 2;
 
       // Recréer les astéroïdes et les planètes-lettres
       asteroids = [];
@@ -188,28 +194,15 @@
 
 
     /****************************
-     * 6) LOGIQUE DU JOUEUR     *
+     * 6) LOGIQUE DU VAISSEAU   *
      ****************************/
 
-    // Gestion des touches fléchées pour déplacer le vaisseau
-    function handleInput() {
-      // Gauche
-      if (keyIsDown(LEFT_ARROW)) {
-        spaceship.x -= spaceship.speed;
-      }
-      // Droite
-      if (keyIsDown(RIGHT_ARROW)) {
-        spaceship.x += spaceship.speed;
-      }
-      // Haut
-      if (keyIsDown(UP_ARROW)) {
-        spaceship.y -= spaceship.speed;
-      }
-      // Bas
-      if (keyIsDown(DOWN_ARROW)) {
-        spaceship.y += spaceship.speed;
-      }
-      // On peut rajouter ZQSD si on le souhaite.
+    // Déplacer le vaisseau en fonction de la souris
+    function handleMouseInput() {
+      // Si le doigt/la souris est à l'intérieur du canvas, on suit
+      // On peut lisser le mouvement si on veut, mais ici on colle direct
+      spaceship.x = mouseX;
+      spaceship.y = mouseY;
     }
 
     // Empêcher le vaisseau de sortir de l'écran (optionnel)
@@ -226,7 +219,7 @@
       for (let i = 0; i < asteroids.length; i++) {
         let a = asteroids[i];
         
-        // On peut faire un simple test de distance
+        // Distance vaisseau-astéroïde
         let d = dist(spaceship.x, spaceship.y, a.x, a.y);
         if (d < (spaceship.size/2 + a.r)) {
           gameState = "lost";
@@ -251,8 +244,7 @@
               gameState = "won";
             }
           } else {
-            // Mauvaise lettre => on la laisse ou on la retire ?
-            // Ici, on va juste la retirer (ou on pourrait la laisser)
+            // Mauvaise lettre => on la retire (ou on pourrait la laisser)
             letterPlanets.splice(i, 1);
           }
         }
@@ -264,14 +256,12 @@
      * 7) AFFICHAGES VISUELS    *
      ****************************/
 
-    // Dessiner le vaisseau (un simple triangle ou un cercle)
+    // Dessiner le vaisseau (un simple triangle)
     function drawSpaceship() {
       push();
       fill(100, 200, 255);
       noStroke();
       translate(spaceship.x, spaceship.y);
-      // Un petit triangle pour donner l'impression d'un vaisseau
-      // pointant vers le haut
       beginShape();
       vertex(-spaceship.size/2, spaceship.size/2);
       vertex(spaceship.size/2, spaceship.size/2);
@@ -354,10 +344,9 @@
       textSize(50);
       text("Bravo !", width / 2, height / 2);
 
-      // Pour relancer le jeu (ex: au clic)
-      // textSize(20);
-      // text("Cliquez pour rejouer", width / 2, height / 2 + 40);
-      // => Si besoin, un mousePressed() qui fait resetGame()
+      // Petit texte pour relancer
+      textSize(20);
+      text("Cliquez pour rejouer", width / 2, height / 2 + 40);
     }
 
     // Écran de défaite
@@ -367,18 +356,22 @@
       textAlign(CENTER, CENTER);
       textSize(50);
       text("Perdu !", width / 2, height / 2);
+
+      // Petit texte pour relancer
+      textSize(20);
+      text("Cliquez pour rejouer", width / 2, height / 2 + 40);
     }
 
-    // (Optionnel) Rejouer en cliquant
-    // function mousePressed() {
-    //   if (gameState === "won" || gameState === "lost") {
-    //     resetGame();
-    //   }
-    // }
-
+    // Rejouer en cliquant quand on a gagné ou perdu
+    function mousePressed() {
+      if (gameState === "won" || gameState === "lost") {
+        resetGame();
+      }
+    }
   </script>
 </body>
 </html>
+
 
 
 
