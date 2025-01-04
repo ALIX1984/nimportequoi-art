@@ -58,7 +58,6 @@
       createCanvas(800, 600);
       textAlign(CENTER, CENTER);
       rectMode(CENTER);
-      console.log("Setup complet !");
       resetGame();
 
       // Jouer la musique de fond en boucle
@@ -72,33 +71,35 @@
       background(240);
 
       if (gameState === "playing") {
+        // Afficher le mot cible en bas de l'écran
         for (let i = 0; i < wordArray.length; i++) {
           fill(collectedLetters.includes(wordArray[i]) ? letterColors[i] : 0);
-          textSize(32);
-          text(wordArray[i], mouseX - (wordArray.length * 16) / 2 + i * 32, height - 50);
+          textSize(24); // Taille ajustée
+          text(wordArray[i], mouseX - (wordArray.length * 12) / 2 + i * 24, height - 50);
         }
 
+        // Afficher et gérer les lettres tombantes
         for (let i = fallingLetters.length - 1; i >= 0; i--) {
           let letter = fallingLetters[i];
           fill(letter.color);
-          textSize(32);
+          textSize(24);
           text(letter.char, letter.x, letter.y);
           letter.y += letter.speed;
 
+          // Vérifier collision avec les lettres du mot cible
           if (
             dist(
-              mouseX + wordArray.indexOf(letter.char) * 32 - (wordArray.length * 16),
+              mouseX + wordArray.indexOf(letter.char) * 24 - (wordArray.length * 12),
               height - 50,
               letter.x,
               letter.y
-            ) < 20
+            ) < 12
           ) {
             fallingLetters.splice(i, 1);
-            if (wordArray.includes(letter.char)) {
+            if (wordArray.includes(letter.char) && !collectedLetters.includes(letter.char)) {
               collectedLetters.push(letter.char);
               if (arraysEqual(collectedLetters, wordArray)) {
                 gameState = "won";
-                console.log("Bravo !");
                 setTimeout(resetGame, 2000);
               }
             }
@@ -131,14 +132,12 @@
     function getNextWord() {
       let categories = Object.keys(wordCategories);
       let category = random(categories);
-      console.log("Catégorie sélectionnée :", category);
       let word = random(wordCategories[category]);
-      console.log("Mot sélectionné :", word);
       return word;
     }
 
     function spawnLetters() {
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 15; i++) {
         let char = random(wordArray.concat(random("abcdefghijklmnopqrstuvwxyz")));
         fallingLetters.push({
           char: char,
@@ -156,6 +155,7 @@
   </script>
 </body>
 </html>
+
 
 
 
