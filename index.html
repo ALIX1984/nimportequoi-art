@@ -3,122 +3,144 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat Attrape-Souris</title>
-  <!-- Inclusion de p5.js -->
+  <title>Attrape-lettres</title>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.min.js"></script>
-  <!-- Inclusion du fichier objects.js -->
-  <script src="objects.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      margin: 0; 
+      margin: 0;
       padding: 0;
     }
     canvas {
       display: block;
       margin: 0 auto;
-      background: #def; /* Fond bleu clair */
-    }
-    h1 {
-      margin-top: 1rem;
+      background: #f0f0f0;
     }
   </style>
 </head>
 <body>
-  <h1>Chat Attrape-Souris 🐱</h1>
-  <p>Déplacez le chat avec la souris pour attraper les souris et éviter les autres objets !</p>
-  <p id="score">Score : 0</p>
-  <p id="errors">Erreurs : 0</p>
-
+  <h1>Attrape-lettres 🎮</h1>
+  <p>Attrapez les lettres colorées dans le bon ordre pour écrire le mot !</p>
   <script>
-    let fallingObjects = [];
-    let score = 0;
-    let errors = 0;
-    const MAX_ERRORS = 10;
+    /* ------------------------------------------------------------------
+       Variables globales
+       ------------------------------------------------------------------ */
+    const words = [
+      "chat", "chien", "lapin", "renard", "souris", "loup", "dauphin", "perroquet", "éléphant", "tortue", 
+      "table", "chaise", "lampe", "lit", "télévision", "rideau", "canapé", "horloge", "couteau", "fourchette", 
+      "stylo", "cahier", "livre", "tableau", "éponge", "crayon", "bureau", "règle", "sac", "colle", 
+      "arbre", "fleur", "nuage", "pluie", "soleil", "vent", "feuille", "montagne", "rivière", "oiseau"
+    ];
+    let currentWord = "";
+    let letters = [];
+    let caughtLetters = [];
+    let colors = ["red", "blue", "green", "orange", "purple", "pink", "yellow"];
+    let fireworks = [];
+    let fireworkDuration = 0;
 
+    /* ------------------------------------------------------------------
+       Initialisation
+       ------------------------------------------------------------------ */
     function setup() {
       createCanvas(800, 600);
       frameRate(30);
-      noCursor(); // Masquer le curseur pour mieux voir le chat
-
-      // Charger les images avant de générer les objets
-      preloadImages(() => {
-        for (let i = 0; i < 6; i++) {
-          fallingObjects.push({
-            x: random(width),
-            y: random(-height, 0),
-            type: random(['mouse', 'object']),
-            img: random(objects),
-            speed: random(2, 5),
-          });
-        }
-      });
+      startNewWord();
     }
 
     function draw() {
-      // Si les images ne sont pas encore chargées
-      if (!isLoaded) {
-        background(200);
-        textSize(24);
-        textAlign(CENTER, CENTER);
-        fill(0);
-        text("Chargement des ressources...", width / 2, height / 2);
+      background(240);
+
+      if (fireworkDuration > 0) {
+        displayFireworks();
+        fireworkDuration--;
+        if (fireworkDuration === 0) {
+          startNewWord();
+        }
         return;
       }
 
-      background(220);
+      displayWord();
+      updateLetters();
+    }
 
-      // Afficher le chat
-      image(cat, mouseX - 50, height - 100, 100, 100);
-
-      // Mettre à jour les objets tombants
-      for (let obj of fallingObjects) {
-        if (obj.type === 'mouse') {
-          image(mouse, obj.x, obj.y, 50, 50);
-        } else {
-          image(obj.img, obj.x, obj.y, 50, 50);
-        }
-
-        obj.y += obj.speed;
-
-        if (obj.y > height) {
-          resetFallingObject(obj);
-        }
-
-        if (
-          obj.y > height - 150 && 
-          obj.x > mouseX - 50 && 
-          obj.x < mouseX + 50
-        ) {
-          if (obj.type === 'mouse') {
-            score++;
-          } else {
-            errors++;
-          }
-
-          document.getElementById('score').textContent  = `Score : ${score}`;
-          document.getElementById('errors').textContent = `Erreurs : ${errors}`;
-
-          resetFallingObject(obj);
-        }
-      }
-
-      if (errors >= MAX_ERRORS) {
-        noLoop();
-        textSize(32);
-        textAlign(CENTER, CENTER);
-        fill(255, 0, 0);
-        text("Game Over !", width / 2, height / 2);
+    /* ------------------------------------------------------------------
+       Gestion des mots et des lettres
+       ------------------------------------------------------------------ */
+    function startNewWord() {
+      currentWord = random(words);
+      caughtLetters = Array(currentWord.length).fill("");
+      letters = [];
+      for (let i = 0; i < currentWord.length; i++) {
+        let color;
+        do {
+          color = random(colors);
+        } while (caughtLetters.includes(color));
+        letters.push({
+          letter: currentWord[i],
+          x: random(width),
+          y: random(-200, -50),
+          speed: random(2, 5),
+          color: color,
+        });
       }
     }
 
-    function resetFallingObject(obj) {
-      obj.x = random(width);
-      obj.y = random(-height, 0);
-      obj.type = random(['mouse', 'object']);
-      obj.img = random(objects);
-      obj.speed = random(2, 5);
+    function displayWord() {
+      textAlign(CENTER, CENTER);
+      textSize(48);
+      for (let i = 0; i < currentWord.length; i++) {
+        fill(caughtLetters[i] || "black");
+        text(currentWord[i], width / 2 - currentWord.length * 25 + i * 50, height - 50);
+      }
+    }
+
+    function updateLetters() {
+      for (let letter of letters) {
+        fill(letter.color);
+        textSize(32);
+        text(letter.letter, letter.x, letter.y);
+
+        letter.y += letter.speed;
+
+        if (letter.y > height - 100 && letter.x > mouseX - 50 && letter.x < mouseX + 50) {
+          let index = caughtLetters.findIndex((l) => l === "");
+          if (index !== -1 && currentWord[index] === letter.letter) {
+            caughtLetters[index] = letter.color;
+            letter.y = height + 100; // Remove the letter from the screen
+          }
+        }
+      }
+
+      if (!caughtLetters.includes("")) {
+        fireworkDuration = 90; // 90 frames of fireworks
+      }
+    }
+
+    /* ------------------------------------------------------------------
+       Feux d'artifice
+       ------------------------------------------------------------------ */
+    function displayFireworks() {
+      if (frameCount % 5 === 0) {
+        fireworks.push({
+          x: random(width),
+          y: random(height / 2),
+          size: random(20, 50),
+          color: random(colors),
+        });
+      }
+
+      for (let firework of fireworks) {
+        fill(firework.color);
+        ellipse(firework.x, firework.y, firework.size);
+      }
+    }
+
+    /* ------------------------------------------------------------------
+       Interaction utilisateur
+       ------------------------------------------------------------------ */
+    function mouseMoved() {
+      mouseX = constrain(mouseX, 50, width - 50);
     }
   </script>
 </body>
