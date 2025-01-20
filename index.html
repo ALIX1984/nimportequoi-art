@@ -1,373 +1,192 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Apprends les Lettres dans l'Espace</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #000; /* Espace sombre */
-      font-family: Arial, sans-serif;
-      color: white;
-      text-align: center;
-    }
-    canvas {
-      display: block;
-      margin: 0 auto;
-      background: #111; /* Fond "espace" */
-    }
-    h1 {
-      margin: 1rem 0 0.5rem;
-    }
-    p {
-      margin: 0 0 1rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bombe de N'importe Quoi</title>
+    <style>
+        body {
+            margin: 0;
+            background: black;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #111;
+        }
+
+        #scoreDisplay {
+            color: white;
+            font-size: 20px;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+
+        #messageDisplay {
+            color: yellow;
+            font-size: 18px;
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            max-width: 300px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Apprends les Lettres dans l'Espace</h1>
-  <!-- Pour une version souris/tactile : on peut adapter le texte ci-dessous -->
-  <p>Déplace le vaisseau en déplaçant la souris (ou le doigt) et collecte les lettres dans l’ordre tout en évitant les astéroïdes !</p>
+    <div id="scoreDisplay">Score: 0</div>
+    <div id="messageDisplay"></div>
+    <canvas id="gameCanvas"></canvas>
 
-  <script>
-    /****************************
-     * 1) CONFIGURATION DU JEU  *
-     ****************************/
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = 800;
+        canvas.height = 600;
 
-    // Liste de catégories et de mots (exemple)
-    let wordCategories = {
-      animaux: ["chat", "chien", "oiseau", "cheval", "serpent"],
-      nature: ["arbre", "fleur", "herbe", "montagne", "rivière"],
-      ecole:  ["crayon", "gomme", "stylo", "livre", "trousse"]
-      // Ajoute d'autres catégories si tu veux
-    };
+        let score = 0;
+        let bombs = [];
+        let bullets = [];
+        const messages = [
+            "Le temps c'est beaucoup de bruit pour N'importe Quoi ®",
+            "Montre leur N'importe Quoi ®",
+            "N'importe quoi®",
+            "N'importe Quoi ® depuis 2002",
+            "N'importe quoi jeu vidéo ®"
+        ];
+        const player = {
+            x: canvas.width / 2 - 40,
+            y: canvas.height - 50,
+            width: 80,
+            height: 20,
+            color: "white",
+            speed: 10
+        };
 
-    // Taille de l'espace de jeu
-    let screenW = 800;
-    let screenH = 600;
-
-    // Nombre d'astéroïdes à générer
-    let nbAsteroids = 6; 
-
-    // Nombre de planètes-lettres (certaines seront utiles, d'autres non)
-    let nbLetters = 10;
-
-
-    /**************************
-     * 2) VARIABLES GLOBALES *
-     **************************/
-
-    // Le mot à apprendre
-    let currentWord = "";
-    let wordArray = [];         // ex: ["m", "o", "n", "t", "a", "g", "n", "e"]
-    let nextLetterIndex = 0;    // Prochaine lettre à collecter dans le mot
-
-    // Le vaisseau
-    let spaceship = {
-      x: screenW / 2,
-      y: screenH / 2,
-      speed: 3,
-      size: 30
-    };
-
-    // Astéroïdes (tableau d'objets {x, y, r, vx, vy})
-    let asteroids = [];
-
-    // Planètes-lettres (tableau d'objets {x, y, letter, r})
-    let letterPlanets = [];
-
-    // État du jeu : "playing" ou "won" ou "lost"
-    let gameState = "playing";
-
-
-    /***********************
-     * 3) SETUP DE P5.JS   *
-     ***********************/
-    function setup() {
-      createCanvas(screenW, screenH);
-      resetGame();
-    }
-
-    /**********************
-     * 4) BOUCLE DRAW     *
-     **********************/
-    function draw() {
-      background(10);  // Espace sombre
-
-      if (gameState === "playing") {
-        // Le vaisseau suit la position actuelle de la souris
-        handleMouseInput();
-        updateSpaceship();
-        checkCollisions();
-        
-        // Affichage
-        drawAsteroids();
-        drawLetterPlanets();
-        drawSpaceship();
-        displayWordProgress();
-
-      } else if (gameState === "won") {
-        displayVictory();
-
-      } else if (gameState === "lost") {
-        displayDefeat();
-      }
-    }
-
-
-    /****************************
-     * 5) GESTION DU JEU       *
-     ****************************/
-    function resetGame() {
-      gameState = "playing";
-      nextLetterIndex = 0;
-
-      // Choisir un mot
-      currentWord = getRandomWord();
-      wordArray = currentWord.split("");
-
-      // Remettre le vaisseau au centre
-      spaceship.x = screenW / 2;
-      spaceship.y = screenH / 2;
-
-      // Recréer les astéroïdes et les planètes-lettres
-      asteroids = [];
-      letterPlanets = [];
-
-      createAsteroids(nbAsteroids);
-      createLetterPlanets(nbLetters);
-    }
-
-    // Sélectionne un mot aléatoirement
-    function getRandomWord() {
-      let categories = Object.keys(wordCategories);
-      let cat = random(categories);
-      return random(wordCategories[cat]);
-    }
-
-    // Création aléatoire d'astéroïdes
-    function createAsteroids(n) {
-      for (let i = 0; i < n; i++) {
-        asteroids.push({
-          x: random(width),
-          y: random(height),
-          r: random(20, 40),        // taille
-          vx: random(-1, 1),        // vitesse x
-          vy: random(-1, 1)         // vitesse y
-        });
-      }
-    }
-
-    // Création aléatoire de planètes-lettres
-    // On veut être sûr que TOUTES les lettres du mot y soient
-    // + d'autres lettres aléatoires
-    function createLetterPlanets(n) {
-      // D'abord, on place chaque lettre du mot
-      for (let i = 0; i < wordArray.length; i++) {
-        letterPlanets.push({
-          letter: wordArray[i],
-          x: random(width),
-          y: random(height),
-          r: 20
-        });
-      }
-
-      // Compléter jusqu'à en avoir n
-      // en piochant des lettres aléatoires dans l'alphabet
-      while (letterPlanets.length < n) {
-        let randomLetter = random("abcdefghijklmnopqrstuvwxyz");
-        letterPlanets.push({
-          letter: randomLetter,
-          x: random(width),
-          y: random(height),
-          r: 20
-        });
-      }
-    }
-
-    // Savoir si on a collecté toutes les lettres
-    function allLettersCollected() {
-      return (nextLetterIndex >= wordArray.length);
-    }
-
-
-    /****************************
-     * 6) LOGIQUE DU VAISSEAU   *
-     ****************************/
-
-    // Déplacer le vaisseau en fonction de la souris
-    function handleMouseInput() {
-      // Si le doigt/la souris est à l'intérieur du canvas, on suit
-      // On peut lisser le mouvement si on veut, mais ici on colle direct
-      spaceship.x = mouseX;
-      spaceship.y = mouseY;
-    }
-
-    // Empêcher le vaisseau de sortir de l'écran (optionnel)
-    function updateSpaceship() {
-      spaceship.x = constrain(spaceship.x, 0 + spaceship.size/2, width - spaceship.size/2);
-      spaceship.y = constrain(spaceship.y, 0 + spaceship.size/2, height - spaceship.size/2);
-    }
-
-    // Détection collisions : 
-    // - Vaisseau vs astéroïdes => "lost"
-    // - Vaisseau vs planètes-lettres => vérifier si c’est la bonne suivante
-    function checkCollisions() {
-      // 1) Collision vaisseau-astéroïde ?
-      for (let i = 0; i < asteroids.length; i++) {
-        let a = asteroids[i];
-        
-        // Distance vaisseau-astéroïde
-        let d = dist(spaceship.x, spaceship.y, a.x, a.y);
-        if (d < (spaceship.size/2 + a.r)) {
-          gameState = "lost";
-          return;
+        function createBomb() {
+            const bomb = {
+                x: Math.random() * (canvas.width - 100),
+                y: -50,
+                width: 100,
+                height: 50,
+                color: "red",
+                text: "N'importe quoi",
+                speed: Math.random() * 3 + 2
+            };
+            bombs.push(bomb);
         }
-      }
 
-      // 2) Collision vaisseau-lettre ?
-      for (let i = letterPlanets.length - 1; i >= 0; i--) {
-        let lp = letterPlanets[i];
-        let d = dist(spaceship.x, spaceship.y, lp.x, lp.y);
-        if (d < (spaceship.size/2 + lp.r)) {
-          // Est-ce la bonne lettre ?
-          if (lp.letter === wordArray[nextLetterIndex]) {
-            // On avance dans la progression du mot
-            nextLetterIndex++;
-            // On retire cette planète-lettre de la liste
-            letterPlanets.splice(i, 1);
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
 
-            // Si on a complété tout le mot
-            if (allLettersCollected()) {
-              gameState = "won";
+        function drawBombs() {
+            bombs.forEach(bomb => {
+                ctx.fillStyle = bomb.color;
+                ctx.fillRect(bomb.x, bomb.y, bomb.width, bomb.height);
+                ctx.fillStyle = "white";
+                ctx.font = "16px Arial";
+                ctx.fillText(bomb.text, bomb.x + 10, bomb.y + 30);
+            });
+        }
+
+        function drawBullets() {
+            bullets.forEach(bullet => {
+                ctx.fillStyle = "yellow";
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            });
+        }
+
+        function moveBombs() {
+            bombs.forEach((bomb, index) => {
+                bomb.y += bomb.speed;
+
+                if (bomb.y > canvas.height) {
+                    bombs.splice(index, 1);
+                    score--;
+                }
+            });
+        }
+
+        function moveBullets() {
+            bullets.forEach((bullet, index) => {
+                bullet.y -= bullet.speed;
+
+                if (bullet.y < 0) {
+                    bullets.splice(index, 1);
+                }
+            });
+        }
+
+        function checkCollisions() {
+            bullets.forEach((bullet, bulletIndex) => {
+                bombs.forEach((bomb, bombIndex) => {
+                    if (
+                        bullet.x < bomb.x + bomb.width &&
+                        bullet.x + bullet.width > bomb.x &&
+                        bullet.y < bomb.y + bomb.height &&
+                        bullet.y + bullet.height > bomb.y
+                    ) {
+                        bullets.splice(bulletIndex, 1);
+                        bombs.splice(bombIndex, 1);
+                        score++;
+
+                        // Affiche un message aléatoire
+                        const messageDisplay = document.getElementById("messageDisplay");
+                        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                        messageDisplay.textContent = randomMessage;
+
+                        // Efface le message après 2 secondes
+                        setTimeout(() => {
+                            messageDisplay.textContent = "";
+                        }, 2000);
+                    }
+                });
+            });
+        }
+
+        function drawScore() {
+            document.getElementById("scoreDisplay").textContent = `Score: ${score}`;
+        }
+
+        function updateGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawPlayer();
+            drawBombs();
+            drawBullets();
+            drawScore();
+
+            moveBombs();
+            moveBullets();
+            checkCollisions();
+
+            requestAnimationFrame(updateGame);
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === "ArrowLeft" && player.x > 0) {
+                player.x -= player.speed;
+            } else if (event.key === "ArrowRight" && player.x + player.width < canvas.width) {
+                player.x += player.speed;
+            } else if (event.key === " ") {
+                bullets.push({
+                    x: player.x + player.width / 2 - 5,
+                    y: player.y,
+                    width: 10,
+                    height: 20,
+                    speed: 8
+                });
             }
-          } else {
-            // Mauvaise lettre => on la retire (ou on pourrait la laisser)
-            letterPlanets.splice(i, 1);
-          }
-        }
-      }
-    }
-
-
-    /****************************
-     * 7) AFFICHAGES VISUELS    *
-     ****************************/
-
-    // Dessiner le vaisseau (un simple triangle)
-    function drawSpaceship() {
-      push();
-      fill(100, 200, 255);
-      noStroke();
-      translate(spaceship.x, spaceship.y);
-      beginShape();
-      vertex(-spaceship.size/2, spaceship.size/2);
-      vertex(spaceship.size/2, spaceship.size/2);
-      vertex(0, -spaceship.size/2);
-      endShape(CLOSE);
-      pop();
-    }
-
-    // Mettre à jour et dessiner chaque astéroïde (ils se déplacent un peu)
-    function drawAsteroids() {
-      for (let i = 0; i < asteroids.length; i++) {
-        let a = asteroids[i];
-        
-        // Mise à jour position
-        a.x += a.vx;
-        a.y += a.vy;
-
-        // Rebondir sur les bords
-        if (a.x < 0 || a.x > width) {
-          a.vx *= -1;
-        }
-        if (a.y < 0 || a.y > height) {
-          a.vy *= -1;
         }
 
-        // Dessin
-        push();
-        noStroke();
-        fill(140);
-        circle(a.x, a.y, a.r * 2);
-        pop();
-      }
-    }
-
-    // Dessiner les planètes-lettres (fixes)
-    function drawLetterPlanets() {
-      for (let i = 0; i < letterPlanets.length; i++) {
-        let lp = letterPlanets[i];
-
-        // Planète
-        push();
-        fill(200, 150, 50);
-        noStroke();
-        circle(lp.x, lp.y, lp.r * 2);
-        pop();
-
-        // Lettre
-        push();
-        fill(0);
-        textAlign(CENTER, CENTER);
-        textSize(20);
-        text(lp.letter, lp.x, lp.y);
-        pop();
-      }
-    }
-
-    // Afficher la progression du mot en haut de l'écran
-    // Les lettres déjà validées s'affichent en couleur, les autres en gris
-    function displayWordProgress() {
-      push();
-      textSize(32);
-      for (let i = 0; i < wordArray.length; i++) {
-        if (i < nextLetterIndex) {
-          // Lettre validée
-          fill(0, 255, 0);
-        } else {
-          // Lettre non encore trouvée
-          fill(150);
-        }
-        text(wordArray[i], 50 + i * 30, 50);
-      }
-      pop();
-    }
-
-    // Écran de victoire
-    function displayVictory() {
-      background(0, 150, 0);
-      fill(255);
-      textAlign(CENTER, CENTER);
-      textSize(50);
-      text("Bravo !", width / 2, height / 2);
-
-      // Petit texte pour relancer
-      textSize(20);
-      text("Cliquez pour rejouer", width / 2, height / 2 + 40);
-    }
-
-    // Écran de défaite
-    function displayDefeat() {
-      background(150, 0, 0);
-      fill(255);
-      textAlign(CENTER, CENTER);
-      textSize(50);
-      text("Perdu !", width / 2, height / 2);
-
-      // Petit texte pour relancer
-      textSize(20);
-      text("Cliquez pour rejouer", width / 2, height / 2 + 40);
-    }
-
-    // Rejouer en cliquant quand on a gagné ou perdu
-    function mousePressed() {
-      if (gameState === "won" || gameState === "lost") {
-        resetGame();
-      }
-    }
-  </script>
+        setInterval(createBomb, 1000);
+        document.addEventListener("keydown", handleKeyDown);
+        updateGame();
+    </script>
 </body>
 </html>
